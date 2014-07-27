@@ -23,6 +23,19 @@ class LispParserTest extends FunSpec with ShouldMatchers {
       )
   }
 
+  it("accepts empty lists") {
+    p.parse("""(def fun (x)
+              |  ())""".stripMargin) shouldBe
+      Exprs(
+        Atom("def"),
+        Atom("fun"),
+        Exprs(
+          Atom("x")
+        ),
+        Exprs()
+      )
+  }
+
   it("parses numbers that start with 0") {
     p.parse("""(def fun (x)
               |  (+ x 012))""".stripMargin) shouldBe
