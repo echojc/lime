@@ -1,4 +1,4 @@
-package sh.echo.lisp
+package sh.echo.exw
 
 import org.scalatest._
 

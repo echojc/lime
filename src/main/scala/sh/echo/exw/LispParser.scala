@@ -1,4 +1,4 @@
-package sh.echo.lisp
+package sh.echo.exw
 
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.matching.Regex.Match
