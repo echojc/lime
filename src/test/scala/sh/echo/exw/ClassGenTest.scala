@@ -14,26 +14,28 @@ class ClassGenTest extends FunSpec with ShouldMatchers {
       """(defn foo (a)
         |  (+ a 23))""".stripMargin
     }
-    ms("foo(I)I") shouldBe List(
-      "ILOAD 0",
+    ms("foo(J)J") shouldBe List(
+      "LLOAD 0",
       "LDC 23",
-      "IADD",
-      "IRETURN"
+      "LADD",
+      "LRETURN"
     )
   }
 
-  it("compiles a nested addition function") {
+  it("compiles nested addition functions") {
     val ms = compile {
       """(defn foo (a)
-        |  (+ a (+ 42 a)))""".stripMargin
+        |  (+ a (+ (+ 23 a) 42)))""".stripMargin
     }
-    ms("foo(I)I") shouldBe List(
-      "ILOAD 0",
+    ms("foo(J)J") shouldBe List(
+      "LLOAD 0",
+      "LDC 23",
+      "LLOAD 0",
+      "LADD",
       "LDC 42",
-      "ILOAD 0",
-      "IADD",
-      "IADD",
-      "IRETURN"
+      "LADD",
+      "LADD",
+      "LRETURN"
     )
   }
 
