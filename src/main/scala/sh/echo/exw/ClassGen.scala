@@ -21,7 +21,7 @@ class ClassGen {
   }
 
   def compileMethod(cw: ClassWriter, name: String, args: List[String], expr: Expr): Unit = {
-    val m = cw.visitMethod(ACC_PUBLIC, name, "(J)J", null, null)
+    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, name, "(JJ)J", null, null)
     m.visitCode()
     compileExpr(m, expr, args)
     m.visitInsn(LRETURN)
@@ -35,7 +35,7 @@ class ClassGen {
         m.visitLdcInsn(i)
       case Atom(s: String) ⇒
         require(scopeArgs.contains(s))
-        m.visitVarInsn(LLOAD, scopeArgs.indexOf(s))
+        m.visitVarInsn(LLOAD, scopeArgs.indexOf(s) * 2)
       case Exprs(Atom(fun: String) :: rest) ⇒
         rest.foreach(compileExpr(m, _, scopeArgs))
         compileFunCall(m, fun)
