@@ -7,18 +7,39 @@ import org.objectweb.asm._
 import org.objectweb.asm.util._
 import org.scalatest._
 
+object ClassGenTest {
+  import ClassGen.paramsFor
+  def checkCast(tpe: String) = {
+    val (ot, _) = paramsFor(tpe)
+    s"CHECKCAST L$ot;"
+  }
+  def unbox(tpe: String) = {
+    val (ot, em) = paramsFor(tpe)
+    s"INVOKEVIRTUAL $ot.$em ()$tpe"
+  }
+  def box(tpe: String) = {
+    val (ot, _) = paramsFor(tpe)
+    s"INVOKESTATIC $ot.valueOf ($tpe)L$ot;"
+  }
+}
+
 class ClassGenTest extends FunSpec with ShouldMatchers {
+  import ClassGen._
+  import ClassGenTest._
 
   it("compiles a simple addition function") {
     val ms = compile {
       """(defn foo (a)
         |  (+ a 23))""".stripMargin
     }
-    ms("foo(J)J") shouldBe List(
-      "LLOAD 0",
+    ms(s"foo($O)$O") shouldBe List(
+      "ALOAD 0",
+      checkCast("J"),
+      unbox("J"),
       "LDC 23",
       "LADD",
-      "LRETURN"
+      box("J"),
+      "ARETURN"
     )
   }
 
@@ -27,17 +48,48 @@ class ClassGenTest extends FunSpec with ShouldMatchers {
       """(defn foo (a)
         |  (+ a (+ (+ 23 a) 42)))""".stripMargin
     }
-    ms("foo(J)J") shouldBe List(
-      "LLOAD 0",
+    ms(s"foo($O)$O") shouldBe List(
+      "ALOAD 0",
+      checkCast("J"),
+      unbox("J"),
       "LDC 23",
-      "LLOAD 0",
+      "ALOAD 0",
+      checkCast("J"),
+      unbox("J"),
       "LADD",
       "LDC 42",
       "LADD",
       "LADD",
-      "LRETURN"
+      box("J"),
+      "ARETURN"
     )
   }
+
+  //it("compiles a multi-argument function") {
+  //  val ms = compile {
+  //    """(defn foo (a b)
+  //      |  (+ a b))""".stripMargin
+  //  }
+  //  ms(s"foo($O$O)$O") shouldBe List(
+  //    "ALOAD 0",
+  //    "ALOAD 1",
+  //    "LADD",
+  //    "ARETURN"
+  //  )
+  //}
+
+  //it("loads arguments in the specified order function") {
+  //  val ms = compile {
+  //    """(defn foo (a b)
+  //      |  (+ b a))""".stripMargin
+  //  }
+  //  ms(s"foo($O$O)$O") shouldBe List(
+  //    "ALOAD 1",
+  //    "ALOAD 0",
+  //    "LADD",
+  //    "ARETURN"
+  //  )
+  //}
 
   def compile(lisp: String): Map[String, List[String]] = {
     val lp = new LispParser

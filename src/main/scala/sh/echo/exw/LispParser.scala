@@ -13,11 +13,11 @@ object Exprs {
 }
 
 object Atom {
-  val IntRegex = """^(-?[0-9]+)$""".r
+  val WholeNumberRegex = """^(-?[0-9]+)$""".r
   def typedApply(value: Any): Atom =
-    IntRegex.findFirstIn(value.toString) match {
-      case Some(intString) ⇒ Atom(intString.toInt)
-      case _               ⇒ Atom(value.toString)
+    WholeNumberRegex.findFirstIn(value.toString) match {
+      case Some(num) ⇒ Atom(num.toLong)
+      case _         ⇒ Atom(value.toString)
     }
 }
 
