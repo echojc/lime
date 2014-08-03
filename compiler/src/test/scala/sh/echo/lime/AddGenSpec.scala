@@ -1,4 +1,4 @@
-package sh.echo.exw
+package sh.echo.lime
 
 class AddGenSpec extends GenBaseSpec {
 

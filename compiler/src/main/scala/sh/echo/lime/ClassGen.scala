@@ -1,4 +1,4 @@
-package sh.echo.exw
+package sh.echo.lime
 
 import org.objectweb.asm._
 
@@ -87,17 +87,17 @@ class ClassGen {
         Ins(m ⇒ {
           // push each value onto the stack
           insArgs foreach { i ⇒
-            m.visitTypeInsn(NEW, "exw/Cons")
+            m.visitTypeInsn(NEW, "lime/Cons")
             m.visitInsn(DUP)
             i.run(m)
             if (i.tpe != "A")
               m.box(i.tpe)
           }
           // push nil
-          m.visitMethodInsn(INVOKESTATIC, "exw/Nil", "get", "()Lexw/List;", false)
+          m.visitMethodInsn(INVOKESTATIC, "lime/Nil", "get", "()Lexw/List;", false)
           // cons each one
           insArgs foreach { _ ⇒
-            m.visitMethodInsn(INVOKESPECIAL, "exw/Cons", "<init>", "(Ljava/lang/Object;Lexw/List;)V", false)
+            m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Lexw/List;)V", false)
           }
         }, "A")
       case "car" ⇒
@@ -105,16 +105,16 @@ class ClassGen {
         Ins(m ⇒ {
           val l = insArgs.head
           l.run(m)
-          m.visitTypeInsn(CHECKCAST, "exw/List")
-          m.visitMethodInsn(INVOKEINTERFACE, "exw/List", "head", "()Ljava/lang/Object;", true)
+          m.visitTypeInsn(CHECKCAST, "lime/List")
+          m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "head", "()Ljava/lang/Object;", true)
         }, "A")
       case "cdr" ⇒
         require(insArgs.size == 1)
         Ins(m ⇒ {
           val l = insArgs.head
           l.run(m)
-          m.visitTypeInsn(CHECKCAST, "exw/List")
-          m.visitMethodInsn(INVOKEINTERFACE, "exw/List", "tail", "()Ljava/lang/Object;", true)
+          m.visitTypeInsn(CHECKCAST, "lime/List")
+          m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "tail", "()Ljava/lang/Object;", true)
         }, "A")
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile function: $fun")
