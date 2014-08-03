@@ -65,18 +65,18 @@ class ClassGen {
         require(scopeArgs.contains(s))
         Ins(_.visitVarInsn(ALOAD, scopeArgs.indexOf(s)), "A")
       case Exprs(Atom(fun: String) :: rest) ⇒
-        val inss = rest map (compileExpr(m, _, scopeArgs))
-        compileFunCall(m, fun, inss)
+        val insArgs = rest map (compileExpr(m, _, scopeArgs))
+        compileFunCall(m, fun, insArgs)
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
   }
 
-  def compileFunCall(m: MethodVisitor, fun: String, inss: List[Ins]): Ins = {
+  def compileFunCall(m: MethodVisitor, fun: String, insArgs: List[Ins]): Ins = {
     fun match {
       case "+" ⇒
         Ins(m ⇒ {
-          inss foreach { i ⇒
+          insArgs foreach { i ⇒
             i.run(m)
             if (i.tpe == "A")
               m.unbox("J")
@@ -86,7 +86,7 @@ class ClassGen {
       case "list" ⇒
         Ins(m ⇒ {
           // push each value onto the stack
-          inss foreach { i ⇒
+          insArgs foreach { i ⇒
             m.visitTypeInsn(NEW, "exw/Cons")
             m.visitInsn(DUP)
             i.run(m)
@@ -96,9 +96,25 @@ class ClassGen {
           // push nil
           m.visitMethodInsn(INVOKESTATIC, "exw/Nil", "get", "()Lexw/List;", false)
           // cons each one
-          inss foreach { _ ⇒
+          insArgs foreach { _ ⇒
             m.visitMethodInsn(INVOKESPECIAL, "exw/Cons", "<init>", "(Ljava/lang/Object;Lexw/List;)V", false)
           }
+        }, "A")
+      case "car" ⇒
+        require(insArgs.size == 1)
+        Ins(m ⇒ {
+          val l = insArgs.head
+          l.run(m)
+          m.visitTypeInsn(CHECKCAST, "exw/List")
+          m.visitMethodInsn(INVOKEINTERFACE, "exw/List", "head", "()Ljava/lang/Object;", true)
+        }, "A")
+      case "cdr" ⇒
+        require(insArgs.size == 1)
+        Ins(m ⇒ {
+          val l = insArgs.head
+          l.run(m)
+          m.visitTypeInsn(CHECKCAST, "exw/List")
+          m.visitMethodInsn(INVOKEINTERFACE, "exw/List", "tail", "()Ljava/lang/Object;", true)
         }, "A")
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile function: $fun")
