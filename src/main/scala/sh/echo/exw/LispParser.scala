@@ -13,11 +13,19 @@ object Exprs {
 }
 
 object Atom {
+  val DecimalNumberRegex = """^(-?[0-9]+\.[0-9]*)$""".r
   val WholeNumberRegex = """^(-?[0-9]+)$""".r
   def typedApply(value: Any): Atom =
     WholeNumberRegex.findFirstIn(value.toString) match {
-      case Some(num) ⇒ Atom(num.toLong)
-      case _         ⇒ Atom(value.toString)
+      case Some(num) ⇒
+        Atom(num.toLong)
+      case None ⇒
+        DecimalNumberRegex.findFirstIn(value.toString) match {
+          case Some(num) ⇒
+            Atom(num.toDouble)
+          case None ⇒
+            Atom(value.toString)
+        }
     }
 }
 
