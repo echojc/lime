@@ -86,20 +86,3 @@ class ClassGen {
     }
   }
 }
-
-    //val ctor = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null)
-    //ctor.visitCode()
-    //ctor.visitVarInsn(ALOAD, 0)
-    //ctor.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false)
-    //ctor.visitInsn(RETURN)
-    //ctor.visitMaxs(0, 0) // automatic
-    //ctor.visitEnd()
-
-    //val main = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
-    //main.visitCode()
-    //main.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
-    //main.visitLdcInsn("woot")
-    //main.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
-    //main.visitInsn(RETURN)
-    //main.visitMaxs(0, 0) // ignored
-    //main.visitEnd()

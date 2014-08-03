@@ -158,15 +158,3 @@ class InsnExtractor extends ClassVisitor(Opcodes.ASM5) {
     new TraceMethodVisitor(t)
   }
 }
-
-  //it("") {
-  //  val bc = (new ClassGen).go()
-  //  val ms = readMethods(bc)
-
-  //  ms("main([Ljava/lang/String;)V") shouldBe List(
-  //    "GETSTATIC java/lang/System.out : Ljava/io/PrintStream;",
-  //    "LDC \"woot\"",
-  //    "INVOKEVIRTUAL java/io/PrintStream.println (Ljava/lang/String;)V",
-  //    "RETURN"
-  //  )
-  //}
