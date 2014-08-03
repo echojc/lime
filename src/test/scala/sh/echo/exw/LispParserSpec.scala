@@ -2,7 +2,7 @@ package sh.echo.exw
 
 import org.scalatest._
 
-class LispParserTest extends FunSpec with ShouldMatchers {
+class LispParserSpec extends FunSpec with ShouldMatchers {
 
   val p = new LispParser
 

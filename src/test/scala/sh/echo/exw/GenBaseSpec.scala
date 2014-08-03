@@ -7,7 +7,7 @@ import org.objectweb.asm._
 import org.objectweb.asm.util._
 import org.scalatest._
 
-object GenTestBase {
+object GenBaseSpec {
   import ClassGen._
 
   object InsnExtractor {
@@ -42,9 +42,9 @@ object GenTestBase {
   }
 }
 
-trait GenTestBase extends FunSpec with ShouldMatchers {
+trait GenBaseSpec extends FunSpec with ShouldMatchers {
   import ClassGen.paramsFor
-  import GenTestBase.InsnExtractor
+  import GenBaseSpec.InsnExtractor
 
   val O = ClassGen.O
 

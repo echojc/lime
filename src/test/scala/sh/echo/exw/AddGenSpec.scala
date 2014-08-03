@@ -1,6 +1,6 @@
 package sh.echo.exw
 
-class AddGenTest extends GenTestBase {
+class AddGenSpec extends GenBaseSpec {
 
   it("compiles a simple addition function") {
     val ms = compile {
