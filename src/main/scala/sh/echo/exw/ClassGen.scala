@@ -76,13 +76,32 @@ class ClassGen {
     fun match {
       case "+" ⇒
         Ins(m ⇒ {
-          inss foreach {i ⇒
+          inss foreach { i ⇒
             i.run(m)
             if (i.tpe == "A")
               m.unbox("J")
           }
           m.visitInsn(LADD)
         }, "J")
+      case "list" ⇒
+        Ins(m ⇒ {
+          // push each value onto the stack
+          inss foreach { i ⇒
+            m.visitTypeInsn(NEW, "exw/Cons")
+            m.visitInsn(DUP)
+            i.run(m)
+            if (i.tpe != "A")
+              m.box(i.tpe)
+          }
+          // push nil
+          m.visitMethodInsn(INVOKESTATIC, "exw/Nil", "get", "()Lexw/List;", false)
+          // cons each one
+          inss foreach { _ ⇒
+            m.visitMethodInsn(INVOKESPECIAL, "exw/Cons", "<init>", "(Ljava/lang/Object;Lexw/List;)V", false)
+          }
+        }, "A")
+      case _ ⇒
+        throw new RuntimeException(s"don't know how to compile function: $fun")
     }
   }
 }
