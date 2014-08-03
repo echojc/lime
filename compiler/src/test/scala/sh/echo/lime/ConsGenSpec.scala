@@ -5,7 +5,7 @@ class ConsGenSpec extends GenBaseSpec {
   describe("basic operations") {
     it("cars") {
       val ms = compile {
-        """(defn foo (a)
+        """(def foo (a)
           |  (car a))""".stripMargin
       }
       ms(s"foo($O)$O") shouldBe List(
@@ -18,7 +18,7 @@ class ConsGenSpec extends GenBaseSpec {
 
     it("cdrs") {
       val ms = compile {
-        """(defn foo (a)
+        """(def foo (a)
           |  (cdr a))""".stripMargin
       }
       ms(s"foo($O)$O") shouldBe List(
@@ -33,7 +33,7 @@ class ConsGenSpec extends GenBaseSpec {
   describe("creation") {
     it("can create a simple list") {
       val ms = compile {
-        """(defn foo ()
+        """(def foo ()
           |  (list 1 2))""".stripMargin
       }
       ms(s"foo()$O") shouldBe List(
@@ -54,7 +54,7 @@ class ConsGenSpec extends GenBaseSpec {
 
     it("can put variables into a list") {
       val ms = compile {
-        """(defn foo (a b)
+        """(def foo (a b)
           |  (list 5 a b 6))""".stripMargin
       }
       ms(s"foo($O$O)$O") shouldBe List(
@@ -83,7 +83,7 @@ class ConsGenSpec extends GenBaseSpec {
 
     it("an empty list is empty") {
       val ms = compile {
-        """(defn foo ()
+        """(def foo ()
           |  (list))""".stripMargin
       }
       ms(s"foo()$O") shouldBe List(

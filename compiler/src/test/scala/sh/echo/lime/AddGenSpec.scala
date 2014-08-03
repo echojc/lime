@@ -4,7 +4,7 @@ class AddGenSpec extends GenBaseSpec {
 
   it("compiles a simple addition function") {
     val ms = compile {
-      """(defn foo (a)
+      """(def foo (a)
         |  (+ a 23))""".stripMargin
     }
     ms(s"foo($O)$O") shouldBe List(
@@ -20,7 +20,7 @@ class AddGenSpec extends GenBaseSpec {
 
   it("compiles nested addition functions") {
     val ms = compile {
-      """(defn foo (a)
+      """(def foo (a)
         |  (+ a (+ (+ 23 a) 42)))""".stripMargin
     }
     ms(s"foo($O)$O") shouldBe List(
@@ -42,7 +42,7 @@ class AddGenSpec extends GenBaseSpec {
 
   it("compiles a varargs addition function") {
     val ms = compile {
-      """(defn foo (a b)
+      """(def foo (a b)
         |  (+ a 23 b 42))""".stripMargin
     }
     ms(s"foo($O$O)$O") shouldBe List(
@@ -62,7 +62,7 @@ class AddGenSpec extends GenBaseSpec {
 
   it("compiles a multi-argument function") {
     val ms = compile {
-      """(defn foo (a b)
+      """(def foo (a b)
         |  (+ a b))""".stripMargin
     }
     ms(s"foo($O$O)$O") shouldBe List(
@@ -80,7 +80,7 @@ class AddGenSpec extends GenBaseSpec {
 
   it("loads arguments in the specified order function") {
     val ms = compile {
-      """(defn foo (a b)
+      """(def foo (a b)
         |  (+ b a))""".stripMargin
     }
     ms(s"foo($O$O)$O") shouldBe List(

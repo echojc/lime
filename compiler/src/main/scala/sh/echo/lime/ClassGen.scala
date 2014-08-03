@@ -34,7 +34,7 @@ class ClassGen {
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, "test", null, "java/lang/Object", null)
 
     expr match {
-      case Exprs(Atom("defn") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
+      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
         require(args forall (_.isInstanceOf[Atom]))
         val argNames = args.map(_.asInstanceOf[Atom].value.toString)
         compileMethod(cw, name.toString, argNames, body)
