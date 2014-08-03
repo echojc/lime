@@ -65,31 +65,61 @@ class ClassGenTest extends FunSpec with ShouldMatchers {
     )
   }
 
-  //it("compiles a multi-argument function") {
-  //  val ms = compile {
-  //    """(defn foo (a b)
-  //      |  (+ a b))""".stripMargin
-  //  }
-  //  ms(s"foo($O$O)$O") shouldBe List(
-  //    "ALOAD 0",
-  //    "ALOAD 1",
-  //    "LADD",
-  //    "ARETURN"
-  //  )
-  //}
+  it("compiles a varargs addition function") {
+    val ms = compile {
+      """(defn foo (a b)
+        |  (+ a 23 b 42))""".stripMargin
+    }
+    ms(s"foo($O$O)$O") shouldBe List(
+      "ALOAD 0",
+      checkCast("J"),
+      unbox("J"),
+      "LDC 23",
+      "ALOAD 1",
+      checkCast("J"),
+      unbox("J"),
+      "LDC 42",
+      "LADD",
+      box("J"),
+      "ARETURN"
+    )
+  }
 
-  //it("loads arguments in the specified order function") {
-  //  val ms = compile {
-  //    """(defn foo (a b)
-  //      |  (+ b a))""".stripMargin
-  //  }
-  //  ms(s"foo($O$O)$O") shouldBe List(
-  //    "ALOAD 1",
-  //    "ALOAD 0",
-  //    "LADD",
-  //    "ARETURN"
-  //  )
-  //}
+  it("compiles a multi-argument function") {
+    val ms = compile {
+      """(defn foo (a b)
+        |  (+ a b))""".stripMargin
+    }
+    ms(s"foo($O$O)$O") shouldBe List(
+      "ALOAD 0",
+      checkCast("J"),
+      unbox("J"),
+      "ALOAD 1",
+      checkCast("J"),
+      unbox("J"),
+      "LADD",
+      box("J"),
+      "ARETURN"
+    )
+  }
+
+  it("loads arguments in the specified order function") {
+    val ms = compile {
+      """(defn foo (a b)
+        |  (+ b a))""".stripMargin
+    }
+    ms(s"foo($O$O)$O") shouldBe List(
+      "ALOAD 1",
+      checkCast("J"),
+      unbox("J"),
+      "ALOAD 0",
+      checkCast("J"),
+      unbox("J"),
+      "LADD",
+      box("J"),
+      "ARETURN"
+    )
+  }
 
   def compile(lisp: String): Map[String, List[String]] = {
     val lp = new LispParser
