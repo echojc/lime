@@ -32,15 +32,18 @@ object Atom {
 
 class LispParser extends JavaTokenParsers {
   case class ParseException(error: NoSuccess) extends RuntimeException
-  val AtomRegex = """[^\s()]+""".r
+  val AtomRegex = """[^\s()\[\]]+""".r
 
   def parse(input: String): Expr =
-    parseAll(list, input) match {
+    parseAll(exprs, input) match {
       case Success(result, _) ⇒ result
       case error: NoSuccess   ⇒ throw new ParseException(error)
     }
 
-  def expr: Parser[Expr] = list | atom
-  def list: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
+  def exprs: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
+  def expr: Parser[Expr] = exprs | list | atom
   def atom: Parser[Expr] = regex(AtomRegex) ^^ Atom.typedApply
+
+  // sugar
+  def list: Parser[Expr] = ("[" ~> rep(expr) <~ "]") ^^ { exprs ⇒ Exprs(Atom("list") :: exprs) }
 }

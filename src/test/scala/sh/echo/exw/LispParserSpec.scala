@@ -158,4 +158,22 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
         )
     }
   }
+
+  describe("list sugar") {
+    it("desugars square brackets into a list function call") {
+      p.parse("""(def fun ()
+                |  [1 2 3])""".stripMargin) shouldBe
+        Exprs(
+          Atom("def"),
+          Atom("fun"),
+          Exprs(),
+          Exprs(
+            Atom("list"),
+            Atom(1),
+            Atom(2),
+            Atom(3)
+          )
+        )
+    }
+  }
 }
