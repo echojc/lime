@@ -10,6 +10,15 @@ case class Exprs(exprs: List[Expr]) extends Expr
 object Exprs {
   def apply(exprs: Expr*): Exprs =
     Exprs(exprs.toList)
+
+  def applyList(exprs: List[Expr]): Exprs = {
+    def iter(exprs: List[Expr]): List[Expr] =
+      exprs map (_ match {
+        case Exprs(exprs) ⇒ Exprs(Atom("list") :: iter(exprs))
+        case rest         ⇒ rest
+      })
+    Exprs(Atom("list") :: iter(exprs))
+  }
 }
 
 object Atom {
@@ -32,7 +41,7 @@ object Atom {
 
 class LispParser extends JavaTokenParsers {
   case class ParseException(error: NoSuccess) extends RuntimeException
-  val AtomRegex = """[^\s()\[\]]+""".r
+  val AtomRegex = """[^\s()]+""".r
 
   def parse(input: String): Expr =
     parseAll(exprs, input) match {
@@ -45,5 +54,5 @@ class LispParser extends JavaTokenParsers {
   def atom: Parser[Expr] = regex(AtomRegex) ^^ Atom.typedApply
 
   // sugar
-  def list: Parser[Expr] = ("[" ~> rep(expr) <~ "]") ^^ { exprs ⇒ Exprs(Atom("list") :: exprs) }
+  def list: Parser[Expr] = ("'(" ~> rep(expr) <~ ")") ^^ { Exprs.applyList }
 }
