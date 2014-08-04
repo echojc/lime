@@ -78,8 +78,7 @@ class ClassGen {
         Ins(m ⇒ {
           insArgs foreach { i ⇒
             i.run(m)
-            if (i.tpe == "A")
-              m.unbox("J")
+            if (i.tpe == "A") m.unbox("J")
           }
           m.visitInsn(LADD)
         }, "J")
@@ -90,8 +89,7 @@ class ClassGen {
             m.visitTypeInsn(NEW, "lime/Cons")
             m.visitInsn(DUP)
             i.run(m)
-            if (i.tpe != "A")
-              m.box(i.tpe)
+            if (i.tpe != "A") m.box(i.tpe)
           }
           // push nil
           m.visitMethodInsn(INVOKESTATIC, "lime/Nil", "get", "()Lexw/List;", false)
@@ -116,6 +114,22 @@ class ClassGen {
           m.visitTypeInsn(CHECKCAST, "lime/List")
           m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "tail", "()Ljava/lang/Object;", true)
         }, "A")
+      case "if" ⇒
+        require(insArgs.size == 3)
+        val e :: t :: f :: _ = insArgs
+        val sameType = t.tpe == f.tpe
+        Ins(m ⇒ {
+          val (l0, l1) = (new Label(), new Label())
+          e.run(m)
+          m.visitJumpInsn(IFNE, l0)
+          t.run(m)
+          if (!sameType && t.tpe != "A") m.box(t.tpe)
+          m.visitJumpInsn(GOTO, l1)
+          m.visitLabel(l0)
+          f.run(m)
+          if (!sameType && f.tpe != "A") m.box(f.tpe)
+          m.visitLabel(l1)
+        }, if (sameType) t.tpe else "A")
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile function: $fun")
     }

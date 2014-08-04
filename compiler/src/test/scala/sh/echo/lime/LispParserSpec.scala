@@ -159,6 +159,30 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
     }
   }
 
+  describe("bools") {
+    it("converts true to 1") {
+      p.parse("""(def fun ()
+                |  true)""".stripMargin) shouldBe
+        Exprs(
+          Atom("def"),
+          Atom("fun"),
+          Exprs(),
+          Atom(1)
+        )
+    }
+
+    it("converts false to 0") {
+      p.parse("""(def fun ()
+                |  false)""".stripMargin) shouldBe
+        Exprs(
+          Atom("def"),
+          Atom("fun"),
+          Exprs(),
+          Atom(0)
+        )
+    }
+  }
+
   describe("list sugar") {
     it("desugars quotes into a list function call") {
       p.parse("""(def fun ()
