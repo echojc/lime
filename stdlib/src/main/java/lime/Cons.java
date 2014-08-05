@@ -11,4 +11,14 @@ public class Cons implements List {
     _head = head;
     _tail = tail;
   }
+
+  public String toString() {
+    String out = "'(" + _head.toString();
+    List l = _tail;
+    while (!(l instanceof Nil)) {
+      out += " " + l.head();
+      l = l.tail();
+    }
+    return out + ")";
+  }
 }

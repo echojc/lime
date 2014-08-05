@@ -6,4 +6,5 @@ public class Nil implements List {
   public static List get() { return self; }
   public Object head() { throw new RuntimeException("head of nil"); }
   public List tail() { throw new RuntimeException("tail of nil"); }
+  public String toString() { return "nil"; }
 }
