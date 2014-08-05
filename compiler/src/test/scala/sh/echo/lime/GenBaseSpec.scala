@@ -66,7 +66,7 @@ trait GenBaseSpec extends FunSpec with ShouldMatchers {
   def compile(lisp: String): Map[String, List[String]] = {
     val lp = new LispParser
     val cg = new ClassGen
-    val bc = cg.compile(lp.parse(lisp))
+    val bc = cg.compileUnit("_test", lp.parse(lisp))
     InsnExtractor.parse(bc)
   }
 }

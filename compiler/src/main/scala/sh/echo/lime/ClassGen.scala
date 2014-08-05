@@ -29,15 +29,17 @@ class ClassGen {
   import ClassGen._
   import Ops._
 
-  def compile(expr: Expr): Array[Byte] = {
+  def compileUnit(name: String, expr: Expr): Array[Byte] = {
     val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-    cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, "test", null, "java/lang/Object", null)
+    cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object", null)
 
     expr match {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
         require(args forall (_.isInstanceOf[Atom]))
         val argNames = args.map(_.asInstanceOf[Atom].value.toString)
         compileMethod(cw, name.toString, argNames, body)
+      case expr @ _ ⇒
+        throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
 
     cw.visitEnd()
