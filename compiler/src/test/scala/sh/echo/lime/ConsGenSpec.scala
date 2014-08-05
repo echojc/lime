@@ -45,9 +45,9 @@ class ConsGenSpec extends GenBaseSpec {
         "DUP",
         "LDC 2",
         box("J"),
-        "INVOKESTATIC lime/Nil.get ()Lexw/List;",
-        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Lexw/List;)V",
-        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Lexw/List;)V",
+        "INVOKESTATIC lime/Nil.get ()Llime/List;",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
         "ARETURN"
       )
     }
@@ -72,11 +72,11 @@ class ConsGenSpec extends GenBaseSpec {
         "DUP",
         "LDC 6",
         box("J"),
-        "INVOKESTATIC lime/Nil.get ()Lexw/List;",
-        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Lexw/List;)V",
-        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Lexw/List;)V",
-        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Lexw/List;)V",
-        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Lexw/List;)V",
+        "INVOKESTATIC lime/Nil.get ()Llime/List;",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
         "ARETURN"
       )
     }
@@ -87,7 +87,7 @@ class ConsGenSpec extends GenBaseSpec {
           |  (list))""".stripMargin
       }
       ms(s"foo()$O") shouldBe List(
-        "INVOKESTATIC lime/Nil.get ()Lexw/List;",
+        "INVOKESTATIC lime/Nil.get ()Llime/List;",
         "ARETURN"
       )
     }

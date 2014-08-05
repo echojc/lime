@@ -94,10 +94,10 @@ class ClassGen {
             if (i.tpe != "A") m.box(i.tpe)
           }
           // push nil
-          m.visitMethodInsn(INVOKESTATIC, "lime/Nil", "get", "()Lexw/List;", false)
+          m.visitMethodInsn(INVOKESTATIC, "lime/Nil", "get", "()Llime/List;", false)
           // cons each one
           insArgs foreach { _ ⇒
-            m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Lexw/List;)V", false)
+            m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Llime/List;)V", false)
           }
         }, "A")
       case "car" ⇒
