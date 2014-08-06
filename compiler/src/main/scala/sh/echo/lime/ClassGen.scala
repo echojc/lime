@@ -114,7 +114,7 @@ class ClassGen {
           val l = insArgs.head
           l.run(m)
           m.visitTypeInsn(CHECKCAST, "lime/List")
-          m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "tail", "()Ljava/lang/Object;", true)
+          m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "tail", "()Llime/List;", true)
         }, "A")
       case "if" ⇒
         require(insArgs.size == 3)

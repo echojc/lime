@@ -24,7 +24,7 @@ class ConsGenSpec extends GenBaseSpec {
       ms(s"foo($O)$O") shouldBe List(
         "ALOAD 0",
         "CHECKCAST lime/List",
-        "INVOKEINTERFACE lime/List.tail ()Ljava/lang/Object;",
+        "INVOKEINTERFACE lime/List.tail ()Llime/List;",
         "ARETURN"
       )
     }
