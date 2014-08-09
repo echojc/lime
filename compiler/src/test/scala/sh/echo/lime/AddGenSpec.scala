@@ -1,6 +1,18 @@
 package sh.echo.lime
 
+import java.lang.{ Long ⇒ JLong }
+
 class AddGenSpec extends GenBaseSpec {
+
+  describe("exec tests") {
+    it("adds") {
+      val tc = compileAndLoad {
+        """(def foo (a)
+          |  (+ a 23))""".stripMargin
+      }
+      tc.foo(42: JLong) should be(65: JLong)
+    }
+  }
 
   it("compiles a simple addition function") {
     val ms = compile {
