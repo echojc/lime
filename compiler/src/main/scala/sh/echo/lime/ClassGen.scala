@@ -48,7 +48,7 @@ class ClassGen {
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object", null)
 
     // collect all user defined functions
-    val (funs, looseExprs) = expr partition {
+    val (funs, freeExprs) = expr partition {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
         true
       case _ ⇒
@@ -59,35 +59,60 @@ class ClassGen {
     val unitCtx = UnitContext(name, knownFuns)
 
     funs foreach {
-      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: exprs) ⇒
+      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: expr :: Nil) ⇒
         require(args forall (_.isInstanceOf[Atom]))
         val argNames = args.map(_.asInstanceOf[Atom].value.toString)
         val funCtx = FunContext(name.toString, argNames, unitCtx)
-        compileFun(cw, exprs, funCtx)
+        compileFun(cw, expr, funCtx)
       case expr @ _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
+
+    // only generate main if we need to
+    if (!freeExprs.isEmpty)
+      compileMain(cw, freeExprs, unitCtx)
 
     cw.visitEnd()
     cw.toByteArray()
   }
 
-  def compileFun(cw: ClassWriter, exprs: List[Expr], funCtx: FunContext): Unit = {
+  def compileFun(cw: ClassWriter, expr: Expr, funCtx: FunContext): Unit = {
     val desc = s"(${(funCtx.args map (_ ⇒ O)).mkString})$O"
     val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, funCtx.name, desc, null, null)
     m.visitCode()
-
-    // compile each expr
-    exprs foreach { expr ⇒
-      // TODO this will leave stuff on the stack...
-      val ins = compileExpr(m, expr, funCtx)
-      ins.run(m)
-      if (ins.tpe != "A")
-        m.box(ins.tpe)
-    }
-
+    val ins = compileExpr(m, expr, funCtx)
+    ins.run(m)
+    if (ins.tpe != "A")
+      m.box(ins.tpe)
     m.visitInsn(ARETURN)
     m.visitMaxs(0, 0)
+    m.visitEnd()
+  }
+
+  def compileMain(cw: ClassWriter, exprs: List[Expr], unitCtx: UnitContext): Unit = {
+    // collect free exprs into a delegate main function
+    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "(Llime/List;)V", null, null)
+    m.visitCode()
+
+    // compile each expr
+    val funCtx = FunContext("main", List("args"), unitCtx)
+    exprs foreach { expr ⇒
+      // TODO this will leave stuff on the stack...
+      compileExpr(m, expr, funCtx).run(m)
+    }
+
+    m.visitInsn(RETURN)
+    m.visitMaxs(0, 0)
+    m.visitEnd()
+
+    // generate java main function that calls delegate
+    val m2 = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
+    m2.visitCode()
+    m2.visitVarInsn(ALOAD, 0)
+    m2.visitMethodInsn(INVOKESTATIC, "lime/Cons", "fromArray", "([Ljava/lang/Object;)Llime/List;", false)
+    m2.visitMethodInsn(INVOKESTATIC, unitCtx.name, "main", "(Llime/List;)V", false)
+    m2.visitInsn(RETURN)
+    m2.visitMaxs(0, 0)
     m.visitEnd()
   }
 

@@ -21,4 +21,12 @@ public class Cons implements List {
     }
     return out + ")";
   }
+
+  // putting this here because no static methods on interfaces
+  public static List fromArray(Object[] es) {
+    List out = Nil.get();
+    for (int i = es.length - 1; i >= 0; i--)
+      out = new Cons(es[i], out);
+    return out;
+  }
 }

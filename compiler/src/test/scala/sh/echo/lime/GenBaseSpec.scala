@@ -47,6 +47,7 @@ trait GenBaseSpec extends FunSpec with ShouldMatchers {
   import GenBaseSpec.InsnExtractor
 
   val O = ClassGen.O
+  val testUnit = "_test"
 
   def checkCast(tpe: String) = {
     val (ot, _) = paramsFor(tpe)
@@ -66,7 +67,7 @@ trait GenBaseSpec extends FunSpec with ShouldMatchers {
   def compile(lisp: String): Map[String, List[String]] = {
     val lp = new LispParser
     val cg = new ClassGen
-    val bc = cg.compileUnit("_test", lp.parse(lisp))
+    val bc = cg.compileUnit(testUnit, lp.parse(lisp))
     InsnExtractor.parse(bc)
   }
 }

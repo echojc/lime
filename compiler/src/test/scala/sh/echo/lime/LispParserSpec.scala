@@ -83,6 +83,22 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
     )
   }
 
+  it("parses naked atoms") {
+    p.parse("""2
+              |true
+              |(def a () 3)""".stripMargin) shouldBe
+    List(
+      Atom(2),
+      Atom(1),
+      Exprs(
+        Atom("def"),
+        Atom("a"),
+        Exprs(),
+        Atom(3)
+      )
+    )
+  }
+
   describe("parsing whole numbers") {
     it("parses numbers that start with 0") {
       p.parse("""(def fun (x)

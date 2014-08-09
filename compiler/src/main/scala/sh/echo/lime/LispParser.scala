@@ -49,7 +49,7 @@ class LispParser extends JavaTokenParsers {
       case error: NoSuccess   ⇒ throw new ParseException(error)
     }
 
-  def file: Parser[List[Expr]] = rep(exprs)
+  def file: Parser[List[Expr]] = rep(expr)
 
   def exprs: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
   def expr: Parser[Expr] = exprs | list | bools | atom
