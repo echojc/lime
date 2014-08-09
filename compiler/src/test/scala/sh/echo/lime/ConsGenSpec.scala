@@ -3,6 +3,22 @@ package sh.echo.lime
 class ConsGenSpec extends GenBaseSpec {
 
   describe("basic operations") {
+    it("conses") {
+      val ms = compile {
+        """(def foo (a b)
+          |  (cons a b))""".stripMargin
+      }
+      ms(s"foo($O$O)$O") shouldBe List(
+        "NEW lime/Cons",
+        "DUP",
+        "ALOAD 0",
+        "ALOAD 1",
+        "CHECKCAST lime/List",
+        "INVOKESPECIAL lime/Cons.<init> (Ljava/lang/Object;Llime/List;)V",
+        "ARETURN"
+      )
+    }
+
     it("cars") {
       val ms = compile {
         """(def foo (a)

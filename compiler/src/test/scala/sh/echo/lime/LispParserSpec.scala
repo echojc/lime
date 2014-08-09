@@ -9,6 +9,7 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
   it("parses basic lisp") {
     p.parse("""(def fun (x)
               |  (+ x 2))""".stripMargin) shouldBe
+    List(
       Exprs(
         Atom("def"),
         Atom("fun"),
@@ -21,11 +22,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
           Atom(2)
         )
       )
+    )
   }
 
   it("accepts empty lists") {
     p.parse("""(def fun (x)
               |  ())""".stripMargin) shouldBe
+    List(
       Exprs(
         Atom("def"),
         Atom("fun"),
@@ -34,11 +37,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
         ),
         Exprs()
       )
+    )
   }
 
   it("only splits atoms on whitespace") {
     p.parse("""(def 0fun-hyphen (x)
               |  (+ x1 2))""".stripMargin) shouldBe
+    List(
       Exprs(
         Atom("def"),
         Atom("0fun-hyphen"),
@@ -51,12 +56,38 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
           Atom(2)
         )
       )
+    )
+  }
+
+  it("parses many expressions") {
+    p.parse("""(def a () 1)
+              |(def b ()
+              |  (+ 2 3))""".stripMargin) shouldBe
+    List(
+      Exprs(
+        Atom("def"),
+        Atom("a"),
+        Exprs(),
+        Atom(1)
+      ),
+      Exprs(
+        Atom("def"),
+        Atom("b"),
+        Exprs(),
+        Exprs(
+          Atom("+"),
+          Atom(2),
+          Atom(3)
+        )
+      )
+    )
   }
 
   describe("parsing whole numbers") {
     it("parses numbers that start with 0") {
       p.parse("""(def fun (x)
                 |  (+ x 012))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -69,11 +100,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(12)
           )
         )
+      )
     }
 
     it("works on negative numbers") {
       p.parse("""(def fun (x)
                 |  (+ x -2))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -86,6 +119,7 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(-2)
           )
         )
+      )
     }
   }
 
@@ -93,6 +127,7 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
     it("parses simple decimals") {
       p.parse("""(def fun (x)
                 |  (+ x 2.0))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -105,11 +140,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(2.0)
           )
         )
+      )
     }
 
     it("parses negative decimals") {
       p.parse("""(def fun (x)
                 |  (+ x -2.0))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -122,11 +159,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(-2.0)
           )
         )
+      )
     }
 
     it("parses decimals with a dot but no numbers after") {
       p.parse("""(def fun (x)
                 |  (+ x 2.))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -139,11 +178,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(2.0)
           )
         )
+      )
     }
 
     it("does not parse atoms that start with a dot with numbers after as a decimal") {
       p.parse("""(def fun (x)
                 |  (+ x .2))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -156,6 +197,7 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(".2")
           )
         )
+      )
     }
   }
 
@@ -163,23 +205,27 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
     it("converts true to 1") {
       p.parse("""(def fun ()
                 |  true)""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
           Exprs(),
           Atom(1)
         )
+      )
     }
 
     it("converts false to 0") {
       p.parse("""(def fun ()
                 |  false)""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
           Exprs(),
           Atom(0)
         )
+      )
     }
   }
 
@@ -187,6 +233,7 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
     it("desugars quotes into a list function call") {
       p.parse("""(def fun ()
                 |  '(1 2 3))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -198,11 +245,13 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             Atom(3)
           )
         )
+      )
     }
 
     it("desugars nested quotes into list function calls") {
       p.parse("""(def fun ()
                 |  '(1 2 (3 (4 5) 6)))""".stripMargin) shouldBe
+      List(
         Exprs(
           Atom("def"),
           Atom("fun"),
@@ -223,6 +272,7 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
             )
           )
         )
+      )
     }
   }
 }

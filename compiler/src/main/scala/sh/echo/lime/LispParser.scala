@@ -43,11 +43,13 @@ class LispParser extends JavaTokenParsers {
   case class ParseException(error: NoSuccess) extends RuntimeException
   val AtomRegex = """[^\s()]+""".r
 
-  def parse(input: String): Expr =
-    parseAll(exprs, input) match {
+  def parse(input: String): List[Expr] =
+    parseAll(file, input) match {
       case Success(result, _) ⇒ result
       case error: NoSuccess   ⇒ throw new ParseException(error)
     }
+
+  def file: Parser[List[Expr]] = rep(exprs)
 
   def exprs: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
   def expr: Parser[Expr] = exprs | list | bools | atom

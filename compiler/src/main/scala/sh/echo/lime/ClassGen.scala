@@ -29,11 +29,11 @@ class ClassGen {
   import ClassGen._
   import Ops._
 
-  def compileUnit(name: String, expr: Expr): Array[Byte] = {
+  def compileUnit(name: String, expr: List[Expr]): Array[Byte] = {
     val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object", null)
 
-    expr match {
+    expr foreach {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
         require(args forall (_.isInstanceOf[Atom]))
         val argNames = args.map(_.asInstanceOf[Atom].value.toString)
@@ -100,6 +100,18 @@ class ClassGen {
             m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Llime/List;)V", false)
           }
         }, "A")
+      case "cons" ⇒
+        require(insArgs.size == 2)
+        Ins(m ⇒ {
+          m.visitTypeInsn(NEW, "lime/Cons")
+          m.visitInsn(DUP)
+          val fst :: snd :: _ = insArgs
+          fst.run(m)
+          if (fst.tpe != "A") m.box(fst.tpe)
+          snd.run(m)
+          m.visitTypeInsn(CHECKCAST, "lime/List")
+          m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Llime/List;)V", false)
+        }, "A")
       case "car" ⇒
         require(insArgs.size == 1)
         Ins(m ⇒ {
@@ -132,8 +144,14 @@ class ClassGen {
           if (!sameType && f.tpe != "A") m.box(f.tpe)
           m.visitLabel(l1)
         }, if (sameType) t.tpe else "A")
-      case _ ⇒
-        throw new RuntimeException(s"don't know how to compile function: $fun")
+      case userfun @ _ ⇒
+        Ins(m ⇒ {
+          insArgs foreach { i ⇒
+            i.run(m)
+            if (i.tpe != "A") m.box(i.tpe)
+          }
+          m.visitMethodInsn(INVOKESTATIC, "$default", userfun, "()Ljava/lang/Object;", false)
+        }, "A")
     }
   }
 }
