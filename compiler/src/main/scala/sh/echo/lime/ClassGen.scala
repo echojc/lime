@@ -33,11 +33,17 @@ class ClassGen {
     val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object", null)
 
+    // collect all user defined functions
+    val knownFuns = expr collect {
+      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
+        name.toString
+    }
+
     expr foreach {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
         require(args forall (_.isInstanceOf[Atom]))
         val argNames = args.map(_.asInstanceOf[Atom].value.toString)
-        compileMethod(cw, name.toString, argNames, body)
+        compileMethod(cw, name.toString, argNames, body, knownFuns)
       case expr @ _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
@@ -46,11 +52,11 @@ class ClassGen {
     cw.toByteArray()
   }
 
-  def compileMethod(cw: ClassWriter, name: String, args: List[String], expr: Expr): Unit = {
+  def compileMethod(cw: ClassWriter, name: String, args: List[String], expr: Expr, knownFuns: List[String]): Unit = {
     val desc = s"(${(args map (_ ⇒ O)).mkString})$O"
     val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, name, desc, null, null)
     m.visitCode()
-    val ins = compileExpr(m, expr, args)
+    val ins = compileExpr(m, expr, args, knownFuns)
     ins.run(m)
     if (ins.tpe != "A")
       m.box(ins.tpe)
@@ -59,7 +65,7 @@ class ClassGen {
     m.visitEnd()
   }
 
-  def compileExpr(m: MethodVisitor, expr: Expr, scopeArgs: List[String]): Ins = {
+  def compileExpr(m: MethodVisitor, expr: Expr, scopeArgs: List[String], knownFuns: List[String]): Ins = {
     expr match {
       case Atom(n: Long) ⇒
         Ins(_.visitLdcInsn(n), "J")
@@ -67,14 +73,14 @@ class ClassGen {
         require(scopeArgs.contains(s))
         Ins(_.visitVarInsn(ALOAD, scopeArgs.indexOf(s)), "A")
       case Exprs(Atom(fun: String) :: rest) ⇒
-        val insArgs = rest map (compileExpr(m, _, scopeArgs))
-        compileFunCall(m, fun, insArgs)
+        val insArgs = rest map (compileExpr(m, _, scopeArgs, knownFuns))
+        compileFunCall(m, fun, insArgs, knownFuns)
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
   }
 
-  def compileFunCall(m: MethodVisitor, fun: String, insArgs: List[Ins]): Ins = {
+  def compileFunCall(m: MethodVisitor, fun: String, insArgs: List[Ins], knownFuns: List[String]): Ins = {
     fun match {
       case "+" ⇒
         Ins(m ⇒ {
@@ -144,14 +150,16 @@ class ClassGen {
           if (!sameType && f.tpe != "A") m.box(f.tpe)
           m.visitLabel(l1)
         }, if (sameType) t.tpe else "A")
-      case userfun @ _ ⇒
+      case userFun @ _ if knownFuns contains userFun ⇒
         Ins(m ⇒ {
           insArgs foreach { i ⇒
             i.run(m)
             if (i.tpe != "A") m.box(i.tpe)
           }
-          m.visitMethodInsn(INVOKESTATIC, "$default", userfun, "()Ljava/lang/Object;", false)
+          m.visitMethodInsn(INVOKESTATIC, "$default", userFun, "()Ljava/lang/Object;", false)
         }, "A")
+      case unknownFun @ _ ⇒
+        throw new UnknownFunctionException(unknownFun)
     }
   }
 }

@@ -34,4 +34,30 @@ class FunCallGenSpec extends GenBaseSpec {
       "ARETURN"
     )
   }
+
+  it("can call another function regardless of declaration order") {
+    val ms = compile {
+      """(def foo () (one))
+        |(def one () 1)""".stripMargin
+    }
+    ms(s"foo()$O") shouldBe List(
+      "INVOKESTATIC $default.one ()Ljava/lang/Object;",
+      "ARETURN"
+    )
+    ms(s"one()$O") shouldBe List(
+      "LDC 1",
+      box("J"),
+      "ARETURN"
+    )
+  }
+
+  it("throws an exception when a function cannot be found") {
+    val ex = intercept[UnknownFunctionException] {
+      compile {
+        """(def foo ()
+          |  (doesntexist))""".stripMargin
+      }
+    }
+    ex.missingFun shouldBe "doesntexist"
+  }
 }
