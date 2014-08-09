@@ -13,7 +13,7 @@ object ClassGen {
   implicit class BoxingInsn(m: MethodVisitor) {
     def unbox(tpe: String): Unit = {
       val (ot, em) = paramsFor(tpe)
-      m.visitTypeInsn(CHECKCAST, s"L$ot;")
+      m.visitTypeInsn(CHECKCAST, ot)
       m.visitMethodInsn(INVOKEVIRTUAL, ot, em, s"()$tpe", false)
     }
     def box(tpe: String): Unit = {
@@ -43,9 +43,9 @@ class ClassGen {
   import ClassGen._
   import Ops._
 
-  def compileUnit(name: String, expr: List[Expr]): Array[Byte] = {
+  def compileUnit(unit: String, expr: List[Expr]): Array[Byte] = {
     val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-    cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object", null)
+    cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, unit, null, "java/lang/Object", null)
 
     // collect all user defined functions
     val (funs, freeExprs) = expr partition {
@@ -56,7 +56,7 @@ class ClassGen {
     }
 
     val knownFuns: List[String] = funs map { case Exprs(_ :: Atom(name) :: _) ⇒ name.toString }
-    val unitCtx = UnitContext(name, knownFuns)
+    val unitCtx = UnitContext(unit, knownFuns)
 
     funs foreach {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: expr :: Nil) ⇒

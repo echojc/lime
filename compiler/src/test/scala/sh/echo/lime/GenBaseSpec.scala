@@ -2,6 +2,7 @@ package sh.echo.lime
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import scala.language.dynamics
 
 import org.objectweb.asm._
 import org.objectweb.asm.util._
@@ -42,16 +43,29 @@ object GenBaseSpec {
   }
 }
 
+class TestClassLoader extends ClassLoader {
+  def load(name: String, bytes: Array[Byte]): Class[_] =
+    defineClass(name, bytes, 0, bytes.length)
+}
+
+// sugar up those function calls
+class CallableClass(underlyingClass: Class[_]) extends Dynamic {
+  def applyDynamic(fun: String)(args: Object*): Object = {
+    val m = underlyingClass.getMethod(fun, Seq.fill(args.size)(classOf[Object]): _*)
+    m.invoke(null, args: _*)
+  }
+}
+
 trait GenBaseSpec extends FunSpec with ShouldMatchers {
   import ClassGen.paramsFor
   import GenBaseSpec.InsnExtractor
 
   val O = ClassGen.O
-  val testUnit = "_test"
+  val testUnit = "$test"
 
   def checkCast(tpe: String) = {
     val (ot, _) = paramsFor(tpe)
-    s"CHECKCAST L$ot;"
+    s"CHECKCAST $ot"
   }
 
   def unbox(tpe: String) = {
@@ -69,5 +83,13 @@ trait GenBaseSpec extends FunSpec with ShouldMatchers {
     val cg = new ClassGen
     val bc = cg.compileUnit(testUnit, lp.parse(lisp))
     InsnExtractor.parse(bc)
+  }
+
+  def compileAndLoad(lisp: String): CallableClass = {
+    val lp = new LispParser
+    val cg = new ClassGen
+    val bc = cg.compileUnit(testUnit, lp.parse(lisp))
+    val cl = (new TestClassLoader).load(testUnit, bc)
+    new CallableClass(cl)
   }
 }
