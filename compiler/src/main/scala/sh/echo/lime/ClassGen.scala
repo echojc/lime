@@ -74,13 +74,13 @@ class ClassGen {
         Ins(_.visitVarInsn(ALOAD, scopeArgs.indexOf(s)), "A")
       case Exprs(Atom(fun: String) :: rest) ⇒
         val insArgs = rest map (compileExpr(m, _, scopeArgs, knownFuns))
-        compileFunCall(m, fun, insArgs, knownFuns)
+        compileFunCall(m, fun, insArgs, scopeArgs.size, knownFuns)
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
   }
 
-  def compileFunCall(m: MethodVisitor, fun: String, insArgs: List[Ins], knownFuns: List[String]): Ins = {
+  def compileFunCall(m: MethodVisitor, fun: String, insArgs: List[Ins], varOffset: Int, knownFuns: List[String]): Ins = {
     fun match {
       case "+" ⇒
         Ins(m ⇒ {
@@ -150,6 +150,37 @@ class ClassGen {
           if (!sameType && f.tpe != "A") m.box(f.tpe)
           m.visitLabel(l1)
         }, if (sameType) t.tpe else "A")
+      case "str" ⇒
+        Ins(m ⇒ {
+          m.visitTypeInsn(NEW, "java/lang/StringBuilder");
+          m.visitInsn(DUP);
+          m.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
+          insArgs foreach { i ⇒
+            i.run(m)
+            if (i.tpe != "A") m.box(i.tpe)
+            m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", false)
+          }
+          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false)
+        }, "A")
+      case "put" ⇒
+        Ins(m ⇒ {
+          m.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
+
+          m.visitTypeInsn(NEW, "java/lang/StringBuilder");
+          m.visitInsn(DUP);
+          m.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
+          insArgs foreach { i ⇒
+            i.run(m)
+            if (i.tpe != "A") m.box(i.tpe)
+            m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", false)
+          }
+          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false)
+
+          m.visitInsn(DUP)
+          m.visitVarInsn(ASTORE, varOffset)
+          m.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
+          m.visitVarInsn(ALOAD, varOffset)
+        }, "A")
       case userFun @ _ if knownFuns contains userFun ⇒
         Ins(m ⇒ {
           insArgs foreach { i ⇒
