@@ -52,12 +52,13 @@ class LispParser extends JavaTokenParsers {
   def file: Parser[List[Expr]] = rep(expr)
 
   def exprs: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
-  def expr: Parser[Expr] = exprs | list | bools | atom
+  def expr: Parser[Expr] = exprs | list | keywords | atom
   def atom: Parser[Expr] = regex(AtomRegex) ^^ Atom.typedApply
 
-  def bools: Parser[Expr] = btrue | bfalse
-  def btrue: Parser[Expr] = "true" ^^ { _ ⇒ Atom.typedApply(1) }
-  def bfalse: Parser[Expr] = "false" ^^ { _ ⇒ Atom.typedApply(0) }
+  def keywords: Parser[Expr] = ktrue | kfalse | knil
+  def ktrue: Parser[Expr] = "true" ^^ { _ ⇒ Atom.typedApply(1) }
+  def kfalse: Parser[Expr] = "false" ^^ { _ ⇒ Atom.typedApply(0) }
+  def knil: Parser[Expr] = "nil" ^^ { _ ⇒ Exprs(Atom("list")) }
 
   // sugar
   def list: Parser[Expr] = ("'(" ~> rep(expr) <~ ")") ^^ { Exprs.applyList }

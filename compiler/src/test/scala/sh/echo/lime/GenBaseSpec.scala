@@ -56,6 +56,11 @@ class CallableClass(underlyingClass: Class[_]) extends Dynamic {
   }
 }
 
+object Cons {
+  def apply(args: Object*): lime.List =
+    lime.Cons.fromArray(Array(args: _*))
+}
+
 trait GenBaseSpec extends FunSpec with ShouldMatchers {
   import ClassGen.paramsFor
   import GenBaseSpec.InsnExtractor

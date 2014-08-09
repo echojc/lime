@@ -246,6 +246,20 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
   }
 
   describe("list sugar") {
+    it("desugars 'nil' into an empty list") {
+      p.parse("(def fun () nil)") shouldBe
+      List(
+        Exprs(
+          Atom("def"),
+          Atom("fun"),
+          Exprs(),
+          Exprs(
+            Atom("list")
+          )
+        )
+      )
+    }
+
     it("desugars quotes into a list function call") {
       p.parse("""(def fun ()
                 |  '(1 2 3))""".stripMargin) shouldBe

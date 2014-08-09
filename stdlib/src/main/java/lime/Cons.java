@@ -22,7 +22,17 @@ public class Cons implements List {
     return out + ")";
   }
 
-  // putting this here because no static methods on interfaces
+  public boolean equals(Object o) {
+    if (o == null || !(o instanceof Cons)) return false;
+    Cons c = (Cons)o;
+    return _head.equals(c._head) && _tail.equals(c._tail);
+  }
+
+  public int hashCode() {
+    return 37 * _head.hashCode() + _tail.hashCode();
+  }
+
+  // putting this here because interfaces can't have static methods
   public static List fromArray(Object[] es) {
     List out = Nil.get();
     for (int i = es.length - 1; i >= 0; i--)

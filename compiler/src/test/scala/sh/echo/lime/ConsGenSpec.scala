@@ -2,6 +2,60 @@ package sh.echo.lime
 
 class ConsGenSpec extends GenBaseSpec {
 
+  describe("integration tests") {
+    it("makes lists") {
+      val tc = compileAndLoad {
+        """(def foo (a b)
+          |  '(a b))""".stripMargin
+      }
+      tc.foo(1: JLong, 2: JLong) should be(Cons(1: JLong, 2: JLong))
+    }
+
+    it("can cons onto lists") {
+      val tc = compileAndLoad {
+        """(def foo (a b)
+          |  (cons a b))""".stripMargin
+      }
+      tc.foo(1: JLong, Cons(2: JLong)) should be(Cons(1: JLong, 2: JLong))
+    }
+
+    it("cars") {
+      val tc = compileAndLoad {
+        """(def foo (a)
+          |  (car a))""".stripMargin
+      }
+      tc.foo(Cons(1: JLong, 2: JLong)) should be(1: JLong)
+    }
+
+    it("throws an exception when you car nil") {
+      val tc = compileAndLoad {
+        """(def foo ()
+          |  (car nil))""".stripMargin
+      }
+      intercept[Exception] {
+        tc.foo()
+      }
+    }
+
+    it("cdrs") {
+      val tc = compileAndLoad {
+        """(def foo (a)
+          |  (cdr a))""".stripMargin
+      }
+      tc.foo(Cons(1: JLong, 2: JLong)) should be(Cons(2: JLong))
+    }
+
+    it("throws an exception when you cdr nil") {
+      val tc = compileAndLoad {
+        """(def foo ()
+          |  (cdr nil))""".stripMargin
+      }
+      intercept[Exception] {
+        tc.foo()
+      }
+    }
+  }
+
   describe("basic operations") {
     it("conses") {
       val ms = compile {

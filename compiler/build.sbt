@@ -14,3 +14,5 @@ scalacOptions := Seq(
   "-deprecation",
   "-feature"
 )
+
+fork in Test := true
