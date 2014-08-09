@@ -23,6 +23,20 @@ object ClassGen {
   }
 
   case class Ins(run: MethodVisitor ⇒ Unit, tpe: String)
+
+  case class UnitContext(
+    name: String,
+    knownFuns: List[String]
+  )
+
+  case class FunContext(
+    name: String,
+    args: List[String],
+    unitCtx: UnitContext
+  ) {
+    // stack offset for local variables
+    val varOffset: Int = args.size
+  }
 }
 
 class ClassGen {
@@ -34,16 +48,22 @@ class ClassGen {
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object", null)
 
     // collect all user defined functions
-    val knownFuns = expr collect {
+    val (funs, looseExprs) = expr partition {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
-        name.toString
+        true
+      case _ ⇒
+        false
     }
 
-    expr foreach {
-      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
+    val knownFuns: List[String] = funs map { case Exprs(_ :: Atom(name) :: _) ⇒ name.toString }
+    val unitCtx = UnitContext(name, knownFuns)
+
+    funs foreach {
+      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: exprs) ⇒
         require(args forall (_.isInstanceOf[Atom]))
         val argNames = args.map(_.asInstanceOf[Atom].value.toString)
-        compileMethod(cw, name.toString, argNames, body, knownFuns)
+        val funCtx = FunContext(name.toString, argNames, unitCtx)
+        compileFun(cw, exprs, funCtx)
       case expr @ _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
@@ -52,39 +72,45 @@ class ClassGen {
     cw.toByteArray()
   }
 
-  def compileMethod(cw: ClassWriter, name: String, args: List[String], expr: Expr, knownFuns: List[String]): Unit = {
-    val desc = s"(${(args map (_ ⇒ O)).mkString})$O"
-    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, name, desc, null, null)
+  def compileFun(cw: ClassWriter, exprs: List[Expr], funCtx: FunContext): Unit = {
+    val desc = s"(${(funCtx.args map (_ ⇒ O)).mkString})$O"
+    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, funCtx.name, desc, null, null)
     m.visitCode()
-    val ins = compileExpr(m, expr, args, knownFuns)
-    ins.run(m)
-    if (ins.tpe != "A")
-      m.box(ins.tpe)
+
+    // compile each expr
+    exprs foreach { expr ⇒
+      // TODO this will leave stuff on the stack...
+      val ins = compileExpr(m, expr, funCtx)
+      ins.run(m)
+      if (ins.tpe != "A")
+        m.box(ins.tpe)
+    }
+
     m.visitInsn(ARETURN)
     m.visitMaxs(0, 0)
     m.visitEnd()
   }
 
-  def compileExpr(m: MethodVisitor, expr: Expr, scopeArgs: List[String], knownFuns: List[String]): Ins = {
+  def compileExpr(m: MethodVisitor, expr: Expr, funCtx: FunContext): Ins = {
     expr match {
       case Atom(n: Long) ⇒
         Ins(_.visitLdcInsn(n), "J")
       case Atom(s: String) ⇒
-        require(scopeArgs.contains(s))
-        Ins(_.visitVarInsn(ALOAD, scopeArgs.indexOf(s)), "A")
-      case Exprs(Atom(fun: String) :: rest) ⇒
-        val insArgs = rest map (compileExpr(m, _, scopeArgs, knownFuns))
-        compileFunCall(m, fun, insArgs, scopeArgs.size, knownFuns)
+        require(funCtx.args.contains(s))
+        Ins(_.visitVarInsn(ALOAD, funCtx.args.indexOf(s)), "A")
+      case Exprs(Atom(fun: String) :: exprs) ⇒
+        val args = exprs map (expr ⇒ compileExpr(m, expr, funCtx))
+        compileFunCall(m, fun, args, funCtx)
       case _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
     }
   }
 
-  def compileFunCall(m: MethodVisitor, fun: String, insArgs: List[Ins], varOffset: Int, knownFuns: List[String]): Ins = {
+  def compileFunCall(m: MethodVisitor, fun: String, args: List[Ins], funCtx: FunContext): Ins = {
     fun match {
       case "+" ⇒
         Ins(m ⇒ {
-          insArgs foreach { i ⇒
+          args foreach { i ⇒
             i.run(m)
             if (i.tpe == "A") m.unbox("J")
           }
@@ -93,7 +119,7 @@ class ClassGen {
       case "list" ⇒
         Ins(m ⇒ {
           // push each value onto the stack
-          insArgs foreach { i ⇒
+          args foreach { i ⇒
             m.visitTypeInsn(NEW, "lime/Cons")
             m.visitInsn(DUP)
             i.run(m)
@@ -102,16 +128,16 @@ class ClassGen {
           // push nil
           m.visitMethodInsn(INVOKESTATIC, "lime/Nil", "get", "()Llime/List;", false)
           // cons each one
-          insArgs foreach { _ ⇒
+          args foreach { _ ⇒
             m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Llime/List;)V", false)
           }
         }, "A")
       case "cons" ⇒
-        require(insArgs.size == 2)
+        require(args.size == 2)
         Ins(m ⇒ {
           m.visitTypeInsn(NEW, "lime/Cons")
           m.visitInsn(DUP)
-          val fst :: snd :: _ = insArgs
+          val fst :: snd :: _ = args
           fst.run(m)
           if (fst.tpe != "A") m.box(fst.tpe)
           snd.run(m)
@@ -119,24 +145,24 @@ class ClassGen {
           m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", "(Ljava/lang/Object;Llime/List;)V", false)
         }, "A")
       case "car" ⇒
-        require(insArgs.size == 1)
+        require(args.size == 1)
         Ins(m ⇒ {
-          val l = insArgs.head
+          val l = args.head
           l.run(m)
           m.visitTypeInsn(CHECKCAST, "lime/List")
           m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "head", "()Ljava/lang/Object;", true)
         }, "A")
       case "cdr" ⇒
-        require(insArgs.size == 1)
+        require(args.size == 1)
         Ins(m ⇒ {
-          val l = insArgs.head
+          val l = args.head
           l.run(m)
           m.visitTypeInsn(CHECKCAST, "lime/List")
           m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "tail", "()Llime/List;", true)
         }, "A")
       case "if" ⇒
-        require(insArgs.size == 3)
-        val e :: t :: f :: _ = insArgs
+        require(args.size == 3)
+        val e :: t :: f :: _ = args
         val sameType = t.tpe == f.tpe
         Ins(m ⇒ {
           val (l0, l1) = (new Label(), new Label())
@@ -151,39 +177,19 @@ class ClassGen {
           m.visitLabel(l1)
         }, if (sameType) t.tpe else "A")
       case "str" ⇒
-        Ins(m ⇒ {
-          m.visitTypeInsn(NEW, "java/lang/StringBuilder");
-          m.visitInsn(DUP);
-          m.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
-          insArgs foreach { i ⇒
-            i.run(m)
-            if (i.tpe != "A") m.box(i.tpe)
-            m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", false)
-          }
-          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false)
-        }, "A")
+        Ins(m ⇒ visitStringBuilder(m, args), "A")
       case "put" ⇒
         Ins(m ⇒ {
           m.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
-
-          m.visitTypeInsn(NEW, "java/lang/StringBuilder");
-          m.visitInsn(DUP);
-          m.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
-          insArgs foreach { i ⇒
-            i.run(m)
-            if (i.tpe != "A") m.box(i.tpe)
-            m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", false)
-          }
-          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false)
-
+          visitStringBuilder(m, args)
           m.visitInsn(DUP)
-          m.visitVarInsn(ASTORE, varOffset)
+          m.visitVarInsn(ASTORE, funCtx.varOffset)
           m.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
-          m.visitVarInsn(ALOAD, varOffset)
+          m.visitVarInsn(ALOAD, funCtx.varOffset)
         }, "A")
-      case userFun @ _ if knownFuns contains userFun ⇒
+      case userFun @ _ if funCtx.unitCtx.knownFuns contains userFun ⇒
         Ins(m ⇒ {
-          insArgs foreach { i ⇒
+          args foreach { i ⇒
             i.run(m)
             if (i.tpe != "A") m.box(i.tpe)
           }
@@ -192,5 +198,17 @@ class ClassGen {
       case unknownFun @ _ ⇒
         throw new UnknownFunctionException(unknownFun)
     }
+  }
+
+  private def visitStringBuilder(m: MethodVisitor, args: List[Ins]): Unit = {
+    m.visitTypeInsn(NEW, "java/lang/StringBuilder");
+    m.visitInsn(DUP);
+    m.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
+    args foreach { i ⇒
+      i.run(m)
+      if (i.tpe != "A") m.box(i.tpe)
+      m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", false)
+    }
+    m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false)
   }
 }
