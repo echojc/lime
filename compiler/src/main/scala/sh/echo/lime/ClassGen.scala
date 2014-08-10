@@ -26,16 +26,23 @@ object ClassGen {
 
   case class UnitContext(
     name: String,
-    knownFuns: List[String]
+    knownFuns: Map[String, FunDef]
   )
 
-  case class FunContext(
+  case class FunDef(
     name: String,
-    args: List[String],
+    args: List[String]
+  ) {
+    val argc = args.size
+    val desc = s"(${Seq.fill(argc)(O).mkString})$O"
+  }
+
+  case class FunContext(
+    funDef: FunDef,
     unitCtx: UnitContext
   ) {
     // stack offset for local variables
-    val varOffset: Int = args.size
+    val varOffset: Int = funDef.args.size
   }
 }
 
@@ -55,14 +62,19 @@ class ClassGen {
         false
     }
 
-    val knownFuns: List[String] = funs map { case Exprs(_ :: Atom(name) :: _) ⇒ name.toString }
+    val knownFuns: Map[String, FunDef] =
+      funs.map { case Exprs(_ :: Atom(name) :: Exprs(args) :: _) ⇒
+        require(args forall (_.isInstanceOf[Atom]))
+        val nameStr = name.toString
+        val argNames = args.map(_.asInstanceOf[Atom].value.toString)
+        nameStr → FunDef(nameStr, argNames)
+      }.toMap
     val unitCtx = UnitContext(unit, knownFuns)
 
     funs foreach {
       case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: expr :: Nil) ⇒
-        require(args forall (_.isInstanceOf[Atom]))
-        val argNames = args.map(_.asInstanceOf[Atom].value.toString)
-        val funCtx = FunContext(name.toString, argNames, unitCtx)
+        require(knownFuns contains name.toString)
+        val funCtx = FunContext(knownFuns(name.toString), unitCtx)
         compileFun(cw, expr, funCtx)
       case expr @ _ ⇒
         throw new RuntimeException(s"don't know how to compile expr:\n$expr")
@@ -77,8 +89,7 @@ class ClassGen {
   }
 
   def compileFun(cw: ClassWriter, expr: Expr, funCtx: FunContext): Unit = {
-    val desc = s"(${(funCtx.args map (_ ⇒ O)).mkString})$O"
-    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, funCtx.name, desc, null, null)
+    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, funCtx.funDef.name, funCtx.funDef.desc, null, null)
     m.visitCode()
     val ins = compileExpr(m, expr, funCtx)
     ins.run(m)
@@ -95,7 +106,7 @@ class ClassGen {
     m.visitCode()
 
     // compile each expr
-    val funCtx = FunContext("main", List("args"), unitCtx)
+    val funCtx = FunContext(FunDef("main", List("args")), unitCtx)
     exprs foreach { expr ⇒
       // TODO this will leave stuff on the stack...
       compileExpr(m, expr, funCtx).run(m)
@@ -121,8 +132,8 @@ class ClassGen {
       case Atom(n: Long) ⇒
         Ins(_.visitLdcInsn(n), "J")
       case Atom(s: String) ⇒
-        require(funCtx.args.contains(s))
-        Ins(_.visitVarInsn(ALOAD, funCtx.args.indexOf(s)), "A")
+        require(funCtx.funDef.args.contains(s))
+        Ins(_.visitVarInsn(ALOAD, funCtx.funDef.args.indexOf(s)), "A")
       case Exprs(Atom(fun: String) :: exprs) ⇒
         val args = exprs map (expr ⇒ compileExpr(m, expr, funCtx))
         compileFunCall(m, fun, args, funCtx)
@@ -221,7 +232,8 @@ class ClassGen {
             i.run(m)
             if (i.tpe != "A") m.box(i.tpe)
           }
-          m.visitMethodInsn(INVOKESTATIC, "$default", userFun, "()Ljava/lang/Object;", false)
+          val userFunDef = funCtx.unitCtx.knownFuns(userFun)
+          m.visitMethodInsn(INVOKESTATIC, funCtx.unitCtx.name, userFunDef.name, userFunDef.desc, false)
         }, "A")
       case unknownFun @ _ ⇒
         throw new UnknownFunctionException(unknownFun)
