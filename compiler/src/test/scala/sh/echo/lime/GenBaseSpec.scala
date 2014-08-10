@@ -69,6 +69,19 @@ trait GenBaseSpec extends FunSpec with ShouldMatchers {
   val O = ClassGen.O
   val testUnit = "$test"
 
+  def captureStdout(fun: ⇒ Any): String = {
+    import java.io._
+    val bos = new ByteArrayOutputStream()
+    val ps = new PrintStream(bos)
+    val oldOut = System.out
+    System.setOut(ps)
+    fun
+    System.setOut(oldOut)
+    val out = bos.toString
+    ps.close()
+    out
+  }
+
   def checkCast(tpe: String) = {
     val (ot, _) = paramsFor(tpe)
     s"CHECKCAST $ot"
