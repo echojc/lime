@@ -51,6 +51,10 @@ class TestClassLoader extends ClassLoader {
 
 // sugar up those function calls
 class CallableClass(underlyingClass: Class[_]) extends Dynamic {
+  def main(args: String*) = {
+    val m = underlyingClass.getMethod("main", classOf[Array[String]])
+    m.invoke(null, args.toArray)
+  }
   def applyDynamic(fun: String)(args: Object*): Object = {
     val m = underlyingClass.getMethod(fun, Seq.fill(args.size)(classOf[Object]): _*)
     m.invoke(null, args: _*)
