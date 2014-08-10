@@ -44,7 +44,7 @@ class ClassGen {
   import Ops._
 
   def compileUnit(unit: String, expr: List[Expr]): Array[Byte] = {
-    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
+    val cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, unit, null, "java/lang/Object", null)
 
     // collect all user defined functions
@@ -192,7 +192,10 @@ class ClassGen {
         Ins(m ⇒ {
           val (l0, l1) = (new Label(), new Label())
           e.run(m)
-          m.visitJumpInsn(IFNE, l0)
+          if (e.tpe != "J") m.unbox("J")
+          m.visitInsn(LCONST_0)
+          m.visitInsn(LCMP) // check if _false_
+          m.visitJumpInsn(IFEQ, l0) // if _false_ jump
           t.run(m)
           if (!sameType && t.tpe != "A") m.box(t.tpe)
           m.visitJumpInsn(GOTO, l1)

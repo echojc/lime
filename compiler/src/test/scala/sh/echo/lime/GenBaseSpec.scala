@@ -26,7 +26,8 @@ object GenBaseSpec {
     def methods: Map[String, List[String]] =
       data.mapValues { t ⇒
         val data = t.getText.map(_.toString.trim).toList
-        data.filterNot(i ⇒ Set("MAXSTACK", "MAXLOCALS").exists(i.contains))
+        // we don't care about behind-the-scenes instructions
+        data.filterNot(i ⇒ Set("MAXSTACK", "MAXLOCALS", "FRAME").exists(i startsWith _))
       }.toMap
 
     override def visitMethod(
