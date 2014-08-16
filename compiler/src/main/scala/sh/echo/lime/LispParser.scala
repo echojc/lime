@@ -4,7 +4,11 @@ import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.matching.Regex.Match
 
 trait Expr
-case class Atom(value: Any) extends Expr
+trait Atom extends Expr
+case class Ident(name: String) extends Atom
+trait Const extends Atom
+case class DecimalConst(value: Double) extends Const
+case class NumberConst(value: Long) extends Const
 case class Exprs(exprs: List[Expr]) extends Expr
 
 object Exprs {
@@ -14,34 +18,18 @@ object Exprs {
   def applyList(exprs: List[Expr]): Exprs = {
     def iter(exprs: List[Expr]): List[Expr] =
       exprs map (_ match {
-        case Exprs(exprs) ⇒ Exprs(Atom("list") :: iter(exprs))
+        case Exprs(exprs) ⇒ Exprs(Ident("list") :: iter(exprs))
         case rest         ⇒ rest
       })
-    Exprs(Atom("list") :: iter(exprs))
+    Exprs(Ident("list") :: iter(exprs))
   }
 }
 
-object Atom {
-  val DecimalNumberRegex = """^(-?[0-9]+\.[0-9]*)$""".r
-  val WholeNumberRegex = """^(-?[0-9]+)$""".r
-  def typedApply(value: Any): Atom =
-    WholeNumberRegex.findFirstIn(value.toString) match {
-      case Some(num) ⇒
-        Atom(num.toLong)
-      case None ⇒
-        DecimalNumberRegex.findFirstIn(value.toString) match {
-          case Some(num) ⇒
-            Atom(num.toDouble)
-          case None ⇒
-            Atom(value.toString)
-        }
-    }
-}
-
-
 class LispParser extends JavaTokenParsers {
-  case class ParseException(error: NoSuccess) extends RuntimeException
+  class ParseException(error: NoSuccess) extends Exception(error.toString)
   val AtomRegex = """[^\s()]+""".r
+  val DecimalRegex = """-?[0-9]+\.[0-9]*""".r
+  val NumberRegex = """-?[0-9]+""".r
 
   def parse(input: String): List[Expr] =
     parseAll(file, input) match {
@@ -53,12 +41,16 @@ class LispParser extends JavaTokenParsers {
 
   def exprs: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
   def expr: Parser[Expr] = exprs | list | keywords | atom
-  def atom: Parser[Expr] = regex(AtomRegex) ^^ Atom.typedApply
+  def atom: Parser[Expr] = decimal | whole | identifier
+
+  def whole: Parser[Expr] = regex(NumberRegex) ^^ (n ⇒ NumberConst(n.toLong))
+  def decimal: Parser[Expr] = regex(DecimalRegex) ^^ (d ⇒ DecimalConst(d.toDouble))
+  def identifier: Parser[Expr] = regex(AtomRegex) ^^ (s ⇒ Ident(s.toString))
 
   def keywords: Parser[Expr] = ktrue | kfalse | knil
-  def ktrue: Parser[Expr] = "true" ^^ { _ ⇒ Atom.typedApply(1) }
-  def kfalse: Parser[Expr] = "false" ^^ { _ ⇒ Atom.typedApply(0) }
-  def knil: Parser[Expr] = "nil" ^^ { _ ⇒ Exprs(Atom("list")) }
+  def ktrue: Parser[Expr] = "true" ^^ { _ ⇒ NumberConst(1) }
+  def kfalse: Parser[Expr] = "false" ^^ { _ ⇒ NumberConst(0) }
+  def knil: Parser[Expr] = "nil" ^^ { _ ⇒ Exprs.applyList(Nil) }
 
   // sugar
   def list: Parser[Expr] = ("'(" ~> rep(expr) <~ ")") ^^ { Exprs.applyList }

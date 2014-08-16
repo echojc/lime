@@ -56,23 +56,23 @@ class ClassGen {
 
     // collect all user defined functions
     val (funs, freeExprs) = expr partition {
-      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: body :: Nil) ⇒
+      case Exprs(Ident("def") :: Ident(name) :: Exprs(args) :: body :: Nil) ⇒
         true
       case _ ⇒
         false
     }
 
     val knownFuns: Map[String, FunDef] =
-      funs.map { case Exprs(_ :: Atom(name) :: Exprs(args) :: _) ⇒
-        require(args forall (_.isInstanceOf[Atom]))
+      funs.map { case Exprs(_ :: Ident(name) :: Exprs(args) :: _) ⇒
+        require(args forall (_.isInstanceOf[Ident]))
         val nameStr = name.toString
-        val argNames = args.map(_.asInstanceOf[Atom].value.toString)
+        val argNames = args.map(_.asInstanceOf[Ident].name)
         nameStr → FunDef(nameStr, argNames)
       }.toMap
     val unitCtx = UnitContext(unit, knownFuns)
 
     funs foreach {
-      case Exprs(Atom("def") :: Atom(name) :: Exprs(args) :: expr :: Nil) ⇒
+      case Exprs(Ident("def") :: Ident(name) :: Exprs(args) :: expr :: Nil) ⇒
         require(knownFuns contains name.toString)
         val funCtx = FunContext(knownFuns(name.toString), unitCtx)
         compileFun(cw, expr, funCtx)
@@ -129,12 +129,12 @@ class ClassGen {
 
   def compileExpr(m: MethodVisitor, expr: Expr, funCtx: FunContext): Ins = {
     expr match {
-      case Atom(n: Long) ⇒
+      case NumberConst(n) ⇒
         Ins(_.visitLdcInsn(n), "J")
-      case Atom(s: String) ⇒
-        require(funCtx.funDef.args.contains(s))
-        Ins(_.visitVarInsn(ALOAD, funCtx.funDef.args.indexOf(s)), "A")
-      case Exprs(Atom(fun: String) :: exprs) ⇒
+      case Ident(name) ⇒
+        require(funCtx.funDef.args.contains(name))
+        Ins(_.visitVarInsn(ALOAD, funCtx.funDef.args.indexOf(name)), "A")
+      case Exprs(Ident(fun) :: exprs) ⇒
         val args = exprs map (expr ⇒ compileExpr(m, expr, funCtx))
         compileFunCall(m, fun, args, funCtx)
       case _ ⇒
