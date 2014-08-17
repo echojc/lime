@@ -29,6 +29,14 @@ class IOGenSpec extends GenBaseSpec {
       }
       out shouldBe "hello '(23 42)2aoeu3\n"
     }
+
+    it("converts strings to numbers") {
+      val tc = compileAndLoad {
+        """(def foo (a)
+          |  (int a))""".stripMargin
+      }
+      tc.foo("42") should be (42: JLong)
+    }
   }
 
   describe("code gen") {
@@ -89,6 +97,19 @@ class IOGenSpec extends GenBaseSpec {
         "ASTORE 1",
         "INVOKEVIRTUAL java/io/PrintStream.println (Ljava/lang/String;)V",
         "ALOAD 1",
+        "ARETURN"
+      )
+    }
+
+    it("converts strings to number") {
+      val ms = compile {
+        """(def foo (a)
+          |  (int a))""".stripMargin
+      }
+      ms(s"foo($O)$O") shouldBe List(
+        "ALOAD 0",
+        "INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;",
+        "INVOKESTATIC java/lang/Long.valueOf (Ljava/lang/String;)Ljava/lang/Long;",
         "ARETURN"
       )
     }

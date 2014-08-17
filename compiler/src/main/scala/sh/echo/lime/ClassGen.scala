@@ -228,6 +228,14 @@ class ClassGen {
           m.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
           m.visitVarInsn(ALOAD, funCtx.varOffset)
         }, "A")
+      case "int" ⇒
+        require(args.size == 1)
+        Ins(m ⇒ {
+          val s = args.head
+          s.run(m)
+          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
+          m.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(Ljava/lang/String;)Ljava/lang/Long;", false)
+        }, "A")
       case userFun @ _ if funCtx.unitCtx.knownFuns contains userFun ⇒
         Ins(m ⇒ {
           args foreach { i ⇒
