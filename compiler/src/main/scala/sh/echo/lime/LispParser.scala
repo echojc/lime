@@ -9,7 +9,19 @@ case class Ident(name: String) extends Atom
 trait Const extends Atom
 case class DecimalConst(value: Double) extends Const
 case class NumberConst(value: Long) extends Const
+case class StringConst(value: String) extends Const
 case class Exprs(exprs: List[Expr]) extends Expr
+
+object StringConst {
+  def unescaped(string: String): StringConst = StringConst(
+    string
+      .replace("\\\"", "\"")
+      .replace("\\\\", "\\")
+      .replace("\\r", "\r")
+      .replace("\\n", "\n")
+      .replace("\\t", "\t")
+  )
+}
 
 object Exprs {
   def apply(exprs: Expr*): Exprs =
@@ -27,7 +39,7 @@ object Exprs {
 
 class LispParser extends JavaTokenParsers {
   class ParseException(error: NoSuccess) extends Exception(error.toString)
-  val AtomRegex = """[^\s()]+""".r
+  val AtomRegex = """[^\s()"]+""".r
   val DecimalRegex = """-?[0-9]+\.[0-9]*""".r
   val NumberRegex = """-?[0-9]+""".r
 
@@ -41,11 +53,12 @@ class LispParser extends JavaTokenParsers {
 
   def exprs: Parser[Expr] = ("(" ~> rep(expr) <~ ")") ^^ Exprs.apply
   def expr: Parser[Expr] = exprs | list | keywords | atom
-  def atom: Parser[Expr] = decimal | whole | identifier
+  def atom: Parser[Expr] = decimal | whole | string | identifier
 
   def whole: Parser[Expr] = regex(NumberRegex) ^^ (n ⇒ NumberConst(n.toLong))
   def decimal: Parser[Expr] = regex(DecimalRegex) ^^ (d ⇒ DecimalConst(d.toDouble))
-  def identifier: Parser[Expr] = regex(AtomRegex) ^^ (s ⇒ Ident(s.toString))
+  def string: Parser[Expr] = stringLiteral ^^ (s ⇒ StringConst.unescaped(s.drop(1).dropRight(1)))
+  def identifier: Parser[Expr] = regex(AtomRegex) ^^ Ident.apply
 
   def keywords: Parser[Expr] = ktrue | kfalse | knil
   def ktrue: Parser[Expr] = "true" ^^ { _ ⇒ NumberConst(1) }

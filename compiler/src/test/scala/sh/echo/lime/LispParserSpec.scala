@@ -226,6 +226,44 @@ class LispParserSpec extends FunSpec with ShouldMatchers {
     }
   }
 
+  describe("strings") {
+    it("parses quoted strings as literals") {
+      p.parse("""(def fun ()
+                |  "hello")""".stripMargin) shouldBe
+      List(
+        Exprs(
+          Ident("def"),
+          Ident("fun"),
+          Exprs(),
+          StringConst("hello")
+        )
+      )
+    }
+
+    describe("escape sequences") {
+      Seq(
+        "\\\"" → "\"",
+        "\\\\" → "\\",
+        "\\r" → "\r",
+        "\\n" → "\n",
+        "\\t" → "\t"
+      ) foreach { case (in, out) ⇒
+        it(s"parses $in correctly") {
+          p.parse(s"""(def fun ()
+                     |  "$in")""".stripMargin) shouldBe
+          List(
+            Exprs(
+              Ident("def"),
+              Ident("fun"),
+              Exprs(),
+              StringConst(out)
+            )
+          )
+        }
+      }
+    }
+  }
+
   describe("list sugar") {
     it("desugars 'nil' into an empty list") {
       p.parse("(def fun () nil)") shouldBe
