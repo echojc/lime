@@ -7,11 +7,11 @@ This is a work in progress: my own Lisp that runs on the JVM!
 Put this in a file called `example.lime` at `/some/location`:
 
 ```lisp
-(def foo ()
-  (+ 23 42))
+(def foo (a)
+  (+ (int a) 42))
 
 (put (car (cdr args)))
-(put (foo))
+(put (foo (car args)))
 ```
 
 Copy and compile the stdlib sources (for now, this is a manual step):
@@ -31,7 +31,7 @@ Execute with java:
 
 ```
 cd /some/location
-java example foo bar baz
+java example 23 bar
 ```
 
 Output:
