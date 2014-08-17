@@ -54,6 +54,40 @@ class ConsGenSpec extends GenBaseSpec {
         tc.foo()
       }
     }
+
+    describe("empty") {
+      it("returns number '1' when empty") {
+        val tc = compileAndLoad {
+          """(def foo (a)
+            |  (empty a))""".stripMargin
+        }
+        tc.foo(Cons()) should be (1: JLong)
+      }
+
+      it("returns number '0' when not empty") {
+        val tc = compileAndLoad {
+          """(def foo (a)
+            |  (empty a))""".stripMargin
+        }
+        tc.foo(Cons("a")) should be (0: JLong)
+      }
+
+      it("can be used in a true if statement") {
+        val tc = compileAndLoad {
+          """(def foo (a)
+            |  (if (empty a) "t" "f"))""".stripMargin
+        }
+        tc.foo(Cons()) shouldBe "t"
+      }
+
+      it("can be used in a false if statement") {
+        val tc = compileAndLoad {
+          """(def foo (a)
+            |  (if (empty a) "t" "f"))""".stripMargin
+        }
+        tc.foo(Cons("a")) shouldBe "f"
+      }
+    }
   }
 
   describe("basic operations") {
@@ -95,6 +129,20 @@ class ConsGenSpec extends GenBaseSpec {
         "ALOAD 0",
         "CHECKCAST lime/List",
         "INVOKEINTERFACE lime/List.tail ()Llime/List;",
+        "ARETURN"
+      )
+    }
+
+    it("can check for empty lists") {
+      val ms = compile {
+        """(def foo (a)
+          |  (empty a))""".stripMargin
+      }
+      ms(s"foo($O)$O") shouldBe List(
+        "ALOAD 0",
+        "INSTANCEOF lime/Nil",
+        "I2L",
+        box("J"),
         "ARETURN"
       )
     }

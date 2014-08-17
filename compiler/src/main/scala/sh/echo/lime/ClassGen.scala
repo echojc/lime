@@ -198,6 +198,14 @@ class ClassGen {
           m.visitTypeInsn(CHECKCAST, "lime/List")
           m.visitMethodInsn(INVOKEINTERFACE, "lime/List", "tail", "()Llime/List;", true)
         }, "A")
+      case "empty" ⇒
+        require(args.size == 1)
+        Ins(m ⇒ {
+          val l = args.head
+          l.run(m)
+          m.visitTypeInsn(INSTANCEOF, "lime/Nil")
+          m.visitInsn(I2L)
+        }, "J")
       case "if" ⇒
         require(args.size == 3)
         val e :: t :: f :: _ = args
