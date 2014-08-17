@@ -131,6 +131,8 @@ class ClassGen {
     expr match {
       case NumberConst(n) ⇒
         Ins(_.visitLdcInsn(n), "J")
+      case StringConst(s) ⇒
+        Ins(_.visitLdcInsn(s), "A")
       case Ident(name) ⇒
         require(funCtx.funDef.args.contains(name))
         Ins(_.visitVarInsn(ALOAD, funCtx.funDef.args.indexOf(name)), "A")

@@ -3,6 +3,14 @@ package sh.echo.lime
 class IOGenSpec extends GenBaseSpec {
 
   describe("integration tests") {
+    it("has string literals") {
+      val tc = compileAndLoad {
+        """(def foo (a)
+          |  (str "Hello, " a "!"))""".stripMargin
+      }
+      tc.foo("world") shouldBe "Hello, world!"
+    }
+
     it("strs things together") {
       val tc = compileAndLoad {
         """(def foo (a b)
@@ -14,16 +22,34 @@ class IOGenSpec extends GenBaseSpec {
     it("prints to stdout") {
       val tc = compileAndLoad {
         """(def foo (a b)
-          |  (put 1 a 2 b 3))""".stripMargin
+          |  (put "hello " a 2 b 3))""".stripMargin
       }
       val out = captureStdout {
         tc.foo(Cons(23: JLong, 42: JLong), "aoeu")
       }
-      out shouldBe "1'(23 42)2aoeu3\n"
+      out shouldBe "hello '(23 42)2aoeu3\n"
     }
   }
 
   describe("code gen") {
+    it("loads string literals") {
+      val ms = compile {
+        """(def foo (a)
+          |  (str "hello " a))""".stripMargin
+      }
+      ms(s"foo($O)$O") shouldBe List(
+        "NEW java/lang/StringBuilder",
+        "DUP",
+        "INVOKESPECIAL java/lang/StringBuilder.<init> ()V",
+        "LDC \"hello \"",
+        "INVOKEVIRTUAL java/lang/StringBuilder.append (Ljava/lang/Object;)Ljava/lang/StringBuilder;",
+        "ALOAD 0",
+        "INVOKEVIRTUAL java/lang/StringBuilder.append (Ljava/lang/Object;)Ljava/lang/StringBuilder;",
+        "INVOKEVIRTUAL java/lang/StringBuilder.toString ()Ljava/lang/String;",
+        "ARETURN"
+      )
+    }
+
     it("strs things together") {
       val ms = compile {
         """(def foo (a)
