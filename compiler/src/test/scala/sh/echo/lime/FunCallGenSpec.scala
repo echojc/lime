@@ -19,13 +19,22 @@ class FunCallGenSpec extends GenBaseSpec {
       tc.foo(23: JLong) should be (24: JLong)
     }
 
-    it("calls a function that was passed by name") {
+    it("calls a function by name") {
       val tc = compileAndLoad {
         """(def inc (a) (+ a 1))
           |(def foo (a b) (b a))
           |(def bar () (foo 1 inc))""".stripMargin
       }
       tc.bar() should be (2: JLong)
+    }
+
+    it("works for call-by-name functions with more than one arg") {
+      val tc = compileAndLoad {
+        """(def add (a b) (+ a b))
+          |(def foo (a b c) (b a c))
+          |(def bar (a) (foo a add 42))""".stripMargin
+      }
+      tc.bar(23: JLong) should be (65: JLong)
     }
   }
 
