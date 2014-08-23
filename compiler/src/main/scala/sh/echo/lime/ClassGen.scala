@@ -134,9 +134,26 @@ class ClassGen {
         Ins(_.visitLdcInsn(n), "J")
       case StringConst(s) ⇒
         Ins(_.visitLdcInsn(s), "A")
-      case Ident(name) ⇒
-        require(funCtx.funDef.args.contains(name))
+      case Ident(name) if funCtx.funDef.args contains name ⇒
         Ins(_.visitVarInsn(ALOAD, funCtx.funDef.args.indexOf(name)), "A")
+      case Ident(name) if funCtx.unitCtx.knownFuns contains name ⇒
+        Ins(m ⇒ {
+          m.visitLdcInsn(Type.getType(s"L${funCtx.unitCtx.name};"))
+          m.visitLdcInsn(name)
+          val funDef = funCtx.unitCtx.knownFuns(name)
+          // begin varargs
+          m.visitLdcInsn(funDef.argc)
+          m.visitTypeInsn(ANEWARRAY, "java/lang/Class")
+          (0 until funDef.argc) foreach { index ⇒
+            m.visitInsn(DUP)
+            m.visitLdcInsn(index)
+            m.visitLdcInsn(Type.getType(O))
+            m.visitInsn(AASTORE)
+          }
+          // end varargs
+          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getMethod",
+            "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", false)
+        }, "A")
       case Exprs(Ident(fun) :: exprs) ⇒
         val args = exprs map (expr ⇒ compileExpr(m, expr, funCtx))
         compileFunCall(m, fun, args, funCtx)
@@ -147,6 +164,24 @@ class ClassGen {
 
   def compileFunCall(m: MethodVisitor, fun: String, args: List[Ins], funCtx: FunContext): Ins = {
     fun match {
+      case argFun @ _ if funCtx.funDef.args contains argFun ⇒
+        Ins(m ⇒ {
+          m.visitVarInsn(ALOAD, funCtx.funDef.args.indexOf(argFun))
+          m.visitTypeInsn(CHECKCAST, "java/lang/reflect/Method")
+          m.visitInsn(ACONST_NULL)
+          // begin varargs
+          m.visitLdcInsn(args.size)
+          m.visitTypeInsn(ANEWARRAY, "java/lang/Object")
+          args.zipWithIndex foreach { case (i, index) ⇒
+            m.visitInsn(DUP)
+            m.visitLdcInsn(index)
+            i.run(m)
+            if (i.tpe != "A") m.box(i.tpe)
+            m.visitInsn(AASTORE)
+          }
+          // end varargs
+          m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", s"($O[$O)$O", false)
+        }, "A")
       case "+" ⇒
         Ins(m ⇒ {
           args foreach { i ⇒
