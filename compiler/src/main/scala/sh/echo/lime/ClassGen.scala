@@ -182,6 +182,15 @@ class ClassGen {
           // end varargs
           m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", s"($O[$O)$O", false)
         }, "A")
+      case userFun @ _ if funCtx.unitCtx.knownFuns contains userFun ⇒
+        Ins(m ⇒ {
+          args foreach { i ⇒
+            i.run(m)
+            if (i.tpe != "A") m.box(i.tpe)
+          }
+          val userFunDef = funCtx.unitCtx.knownFuns(userFun)
+          m.visitMethodInsn(INVOKESTATIC, funCtx.unitCtx.name, userFunDef.name, userFunDef.desc, false)
+        }, "A")
       case "+" ⇒
         Ins(m ⇒ {
           args foreach { i ⇒
@@ -279,15 +288,6 @@ class ClassGen {
           s.run(m)
           m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
           m.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(Ljava/lang/String;)Ljava/lang/Long;", false)
-        }, "A")
-      case userFun @ _ if funCtx.unitCtx.knownFuns contains userFun ⇒
-        Ins(m ⇒ {
-          args foreach { i ⇒
-            i.run(m)
-            if (i.tpe != "A") m.box(i.tpe)
-          }
-          val userFunDef = funCtx.unitCtx.knownFuns(userFun)
-          m.visitMethodInsn(INVOKESTATIC, funCtx.unitCtx.name, userFunDef.name, userFunDef.desc, false)
         }, "A")
       case unknownFun @ _ ⇒
         throw new UnknownFunctionException(unknownFun)
