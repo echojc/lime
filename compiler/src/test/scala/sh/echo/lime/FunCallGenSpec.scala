@@ -41,7 +41,7 @@ class FunCallGenSpec extends GenBaseSpec {
         "ARETURN"
       )
       ms(s"foo()$O") shouldBe List(
-        s"INVOKESTATIC $testUnit.one ()Ljava/lang/Object;",
+        s"INVOKESTATIC $testUnit.one ()$O",
         "ARETURN"
       )
     }
@@ -58,7 +58,7 @@ class FunCallGenSpec extends GenBaseSpec {
       ms(s"bar()$O") shouldBe List(
         "LDC 1",
         box("J"),
-        s"INVOKESTATIC $testUnit.foo (Ljava/lang/Object;)Ljava/lang/Object;",
+        s"INVOKESTATIC $testUnit.foo ($O)$O",
         "ARETURN"
       )
     }
@@ -69,7 +69,7 @@ class FunCallGenSpec extends GenBaseSpec {
           |(def one () 1)""".stripMargin
       }
       ms(s"foo()$O") shouldBe List(
-        s"INVOKESTATIC $testUnit.one ()Ljava/lang/Object;",
+        s"INVOKESTATIC $testUnit.one ()$O",
         "ARETURN"
       )
       ms(s"one()$O") shouldBe List(
