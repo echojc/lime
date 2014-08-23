@@ -4,7 +4,7 @@ import Keys._
 object HelloBuild extends Build {
   lazy val compiler = (
     project in file("compiler")
-      dependsOn (stdlib % "test")
+      dependsOn stdlib
   )
   lazy val stdlib = (
     project in file("stdlib")
