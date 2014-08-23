@@ -7,11 +7,15 @@ This is a work in progress: my own Lisp that runs on the JVM!
 Put this in a file called `example.lime` at `/some/location`:
 
 ```lisp
-(def foo (a)
-  (+ (int a) 42))
+(def fold (lst acc fun)
+  (if (empty lst)
+    acc
+    (fold (cdr lst) (fun acc (car lst)) fun)))
 
-(put (car (cdr args)))
-(put (foo (car args)))
+(def sum (acc nxt)
+  (+ acc (int nxt)))
+
+(put (fold args 0 sum))
 ```
 
 Copy and compile the stdlib sources (for now, this is a manual step):
@@ -31,12 +35,11 @@ Execute with java:
 
 ```
 cd /some/location
-java example 23 bar
+java example 42 23
 ```
 
 Output:
 
 ```
-bar
 65
 ```
