@@ -5,6 +5,7 @@ import org.objectweb.asm._
 object ClassGen {
   import Ops._
   val O = "Ljava/lang/Object;"
+  val E = Array[String]("java/lang/Exception")
 
   def paramsFor(tpe: String): (String, String) = tpe match {
     case "J" ⇒ ("java/lang/Long", "longValue")
@@ -89,7 +90,7 @@ class ClassGen {
   }
 
   def compileFun(cw: ClassWriter, expr: Expr, funCtx: FunContext): Unit = {
-    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, funCtx.funDef.name, funCtx.funDef.desc, null, null)
+    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, funCtx.funDef.name, funCtx.funDef.desc, null, E)
     m.visitCode()
     val ins = compileExpr(m, expr, funCtx)
     ins.run(m)
@@ -102,7 +103,7 @@ class ClassGen {
 
   def compileMain(cw: ClassWriter, exprs: List[Expr], unitCtx: UnitContext): Unit = {
     // collect free exprs into a delegate main function
-    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "(Llime/List;)V", null, null)
+    val m = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "(Llime/List;)V", null, E)
     m.visitCode()
 
     // compile each expr
@@ -117,7 +118,7 @@ class ClassGen {
     m.visitEnd()
 
     // generate java main function that calls delegate
-    val m2 = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
+    val m2 = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, E)
     m2.visitCode()
     m2.visitVarInsn(ALOAD, 0)
     m2.visitMethodInsn(INVOKESTATIC, "lime/Cons", "fromArray", "([Ljava/lang/Object;)Llime/List;", false)
