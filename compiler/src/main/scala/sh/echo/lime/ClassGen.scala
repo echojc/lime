@@ -51,12 +51,14 @@ class ClassGen {
   import ClassGen._
   import Ops._
 
-  def compileUnit(unit: String, expr: List[Expr]): Array[Byte] = {
+  def compileUnit(unit: String, exprs: List[Expr]): Array[Byte] = {
     val cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, unit, null, "java/lang/Object", null)
 
+    // TODO make this better
+    // pull lambdas into standalone functions
     // collect all user defined functions
-    val (funs, freeExprs) = expr partition {
+    val (funs, freeExprs) = delambda(exprs) partition {
       case Exprs(Ident("def") :: Ident(name) :: Exprs(args) :: body :: Nil) ⇒
         true
       case _ ⇒
@@ -87,6 +89,34 @@ class ClassGen {
 
     cw.visitEnd()
     cw.toByteArray()
+  }
+
+  // TODO this whole function is pretty hacky tbh...
+  def delambda(exprs: List[Expr]): List[Expr] = {
+    // TODO yuuuuuuck
+    var id: Int = 0
+
+    def iter(expr: Expr): (Expr, List[Expr]) = {
+      expr match {
+        case Exprs(Ident("fn") :: Exprs(args) :: expr :: Nil) ⇒
+          val name = "$fn$" + id
+          id += 1
+          // TODO what if `expr` contains more lambdas?
+          val lambda = Exprs(Ident("def") :: Ident(name) :: Exprs(args) :: expr :: Nil)
+          (Ident(name), List(lambda))
+        case fun @ Exprs(Ident("def") :: Ident(_) :: Exprs(_) :: expr :: Nil) ⇒
+          val (body, lambdas) = iter(expr)
+          (Exprs((fun.exprs dropRight 1) :+ body), lambdas)
+        case Exprs(exprs) ⇒
+          val (newExprs, lambdas) = (exprs map iter).unzip
+          (Exprs(newExprs), lambdas.flatten)
+        case expr @ _ ⇒
+          (expr, Nil)
+      }
+    }
+
+    val (newExprs, lambdas) = (exprs map iter).unzip
+    newExprs ++ lambdas.flatten
   }
 
   def compileFun(cw: ClassWriter, expr: Expr, funCtx: FunContext): Unit = {
