@@ -12,10 +12,9 @@ Put this in a file called `example.lime` at `/some/location`:
     acc
     (fold (cdr lst) (fun acc (car lst)) fun)))
 
-(def sum (acc nxt)
-  (+ acc (int nxt)))
-
-(put (fold args 0 sum))
+(put (fold args
+           0
+           (fn (acc nxt) (+ acc (int nxt)))))
 ```
 
 Copy and compile the stdlib sources (for now, this is a manual step):
