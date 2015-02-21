@@ -2,7 +2,7 @@ import org.scalatest._
 
 class ParserTest extends FunSpec with ShouldMatchers {
 
-  def parse(code: String): Any = Parser.parse(code).get
+  def parse(code: String): Object = Parser.parse(code).get
 
   describe("numbers") {
     it("parses a decimal as double") {
