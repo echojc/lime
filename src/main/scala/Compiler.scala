@@ -42,6 +42,16 @@ object Compiler {
       m.visitLdcInsn(d); box(m)
     case s: String ⇒
       m.visitLdcInsn(s)
+    case list: lime.List ⇒
+      list foreach { elem ⇒
+        m.visitTypeInsn(NEW, "lime/Cons")
+        m.visitInsn(DUP)
+        quotes(m)(elem) // once quoted, always quoted
+      }
+      m.visitMethodInsn(INVOKESTATIC, "lime/Nil", "get", "()Llime/List;", false)
+      list foreach { _ ⇒
+        m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", s"($O$O)V", false)
+      }
   }
 
   object InlineMath {

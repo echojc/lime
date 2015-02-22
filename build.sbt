@@ -8,3 +8,6 @@ libraryDependencies ++= Seq(
   "org.ow2.asm" % "asm-util" % "5.0.3",
   "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 )
+
+// required to find limelib classes
+fork in Test := true

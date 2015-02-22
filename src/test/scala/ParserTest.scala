@@ -1,7 +1,6 @@
 import java.lang.{ Double ⇒ D }
-import org.scalatest._, matchers.{ ShouldMatchers ⇒ _, _ }
 
-class ParserTest extends FunSpec with ShouldMatchers {
+class ParserTest extends LimeSpec {
 
   def parseAll(code: String): lime.List = Parser.parse(code).get
   def parse(code: String): Object = parseAll(code).asInstanceOf[lime.List].car()
@@ -106,27 +105,4 @@ class ParserTest extends FunSpec with ShouldMatchers {
     }
   }
 
-  def limeEquivalentOf(right: List[Object]) = BeMatcher { left: Object ⇒
-    def convertList(list: lime.List): List[Object] =
-      Stream.iterate((List.empty[Object], list)) {
-        case (acc, list) ⇒
-          val car = list.car() match {
-            case list: lime.List ⇒ convertList(list)
-            case v               ⇒ v
-          }
-          (acc :+ car, list.cdr().asInstanceOf[lime.List])
-      }.dropWhile(!_._2.isInstanceOf[lime.Nil]).head._1
-
-    left match {
-      case left: lime.List ⇒
-        val converted = convertList(left)
-        MatchResult(
-          converted == right,
-          s"$converted was not equal to $right",
-          s"$converted was equal to $right"
-        )
-      case _ ⇒
-        MatchResult(false, s"$left was not a lime.List", s"$left was a lime.List")
-    }
-  }
 }

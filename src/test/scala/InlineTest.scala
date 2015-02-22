@@ -1,4 +1,4 @@
-class InlineTest extends CompilerTest {
+class InlineTest extends LimeSpec {
   it("addition") {
     val t = compile { """
       (def (foo) (+ 1 2))
