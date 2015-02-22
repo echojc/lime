@@ -42,6 +42,10 @@ object Compiler {
       m.visitLdcInsn(d); box(m)
     case s: String ⇒
       m.visitLdcInsn(s)
+    case Symbol(s) ⇒
+      m.visitFieldInsn(GETSTATIC, "scala/Symbol$", "MODULE$", "Lscala/Symbol$;")
+      m.visitLdcInsn(s)
+      m.visitMethodInsn(INVOKEVIRTUAL, "scala/Symbol$", "apply", "(Ljava/lang/String;)Lscala/Symbol;", false)
     case list: lime.List ⇒
       list foreach { elem ⇒
         m.visitTypeInsn(NEW, "lime/Cons")
