@@ -2,7 +2,8 @@ import org.scalatest._
 
 class ParserTest extends FunSpec with ShouldMatchers {
 
-  def parse(code: String): Object = Parser.parse(code).get
+  def parseAll(code: String): Object = Parser.parse(code).get
+  def parse(code: String): Object = parseAll(code).asInstanceOf[List[Object]].head
 
   describe("numbers") {
     it("parses a decimal as double") {
@@ -89,6 +90,16 @@ class ParserTest extends FunSpec with ShouldMatchers {
         List('if, List(Symbol("nil?"), 'xs),
           'zero,
           List('fun, List('foldl, 'fun, 'zero, List('cdr, 'xs)), List('car, 'xs))))
+    }
+    it("parses multiple expressions") {
+      parseAll { """
+        (def (foo) 1)
+        (def (bar) 2)
+      """ } shouldBe
+      List(
+        List('def, List('foo), 1.0),
+        List('def, List('bar), 2.0)
+      )
     }
   }
 }

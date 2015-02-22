@@ -2,9 +2,10 @@ import scala.util.parsing.combinator._
 
 object Parser extends JavaTokenParsers {
 
-  def parse(code: String): ParseResult[Object] = super.parse(expr, code)
+  def parse(code: String): ParseResult[List[Object]] = super.parse(exprs, code)
 
-  def expr = number | string | symbol | list | quotes
+  def exprs: Parser[List[Object]] = rep1(expr)
+  def expr: Parser[Object] = number | string | symbol | list | quotes
 
   def number: Parser[Object] = """-?(\d+(\.\d*)?|\d*\.\d+)\b""".r ^^ (java.lang.Double.valueOf)
   def string: Parser[Object] = stringLiteral ^^ (s ⇒ s.substring(1, s.length - 1))
