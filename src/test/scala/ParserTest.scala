@@ -1,9 +1,10 @@
-import org.scalatest._
+import java.lang.{ Double ⇒ D }
+import org.scalatest._, matchers.{ ShouldMatchers ⇒ _, _ }
 
 class ParserTest extends FunSpec with ShouldMatchers {
 
-  def parseAll(code: String): Object = Parser.parse(code).get
-  def parse(code: String): Object = parseAll(code).asInstanceOf[List[Object]].head
+  def parseAll(code: String): lime.List = Parser.parse(code).get
+  def parse(code: String): Object = parseAll(code).asInstanceOf[lime.List].car()
 
   describe("numbers") {
     it("parses a decimal as double") {
@@ -47,16 +48,16 @@ class ParserTest extends FunSpec with ShouldMatchers {
 
   describe("lists") {
     it("parses an empty list") {
-      parse("()") shouldBe Nil
+      parse("()") shouldBe limeEquivalentOf(Nil)
     }
     it("parses a list with one expr") {
-      parse("(foo)") shouldBe List('foo)
+      parse("(foo)") shouldBe limeEquivalentOf(List('foo))
     }
     it("parses a list with more than one expr") {
-      parse("(foo 1 2.5 \"3\")") shouldBe List('foo, 1.0, 2.5, "3")
+      parse("(foo 1 2.5 \"3\")") shouldBe limeEquivalentOf(List('foo, 1.0: D, 2.5: D, "3"))
     }
     it("parses nested lists") {
-      parse("(foo () (1 2.5 \"3\") bar)") shouldBe List('foo, Nil, List(1.0, 2.5, "3"), 'bar)
+      parse("(foo () (1 2.5 \"3\") bar)") shouldBe limeEquivalentOf(List('foo, Nil, List(1.0, 2.5, "3"), 'bar))
     }
   }
 
@@ -67,13 +68,13 @@ class ParserTest extends FunSpec with ShouldMatchers {
       "," → "unquote"
     ) foreach { case (char, name) ⇒
       it(s"parses $char on a single expr into $name") {
-        parse(s"${char}foo") shouldBe List(Symbol(name), 'foo)
+        parse(s"${char}foo") shouldBe limeEquivalentOf(List(Symbol(name), 'foo))
       }
       it(s"parses $char on a list into $name") {
-        parse(s"$char(foo bar)") shouldBe List(Symbol(name), List('foo, 'bar))
+        parse(s"$char(foo bar)") shouldBe limeEquivalentOf(List(Symbol(name), List('foo, 'bar)))
       }
       it(s"parses nested $char") {
-        parse(s"${char}${char}foo") shouldBe List(Symbol(name), List(Symbol(name), 'foo))
+        parse(s"${char}${char}foo") shouldBe limeEquivalentOf(List(Symbol(name), List(Symbol(name), 'foo)))
       }
     }
   }
@@ -85,21 +86,47 @@ class ParserTest extends FunSpec with ShouldMatchers {
           (if (nil? xs)
             zero
             (fun (foldl fun zero (cdr xs)) (car xs))))
-      """ } shouldBe
-      List('def, List('foldl, 'fun, 'zero, 'xs),
-        List('if, List(Symbol("nil?"), 'xs),
-          'zero,
-          List('fun, List('foldl, 'fun, 'zero, List('cdr, 'xs)), List('car, 'xs))))
+      """ } shouldBe limeEquivalentOf(
+        List('def, List('foldl, 'fun, 'zero, 'xs),
+          List('if, List(Symbol("nil?"), 'xs),
+            'zero,
+            List('fun, List('foldl, 'fun, 'zero, List('cdr, 'xs)), List('car, 'xs))))
+      )
     }
     it("parses multiple expressions") {
       parseAll { """
         (def (foo) 1)
         (def (bar) 2)
-      """ } shouldBe
-      List(
-        List('def, List('foo), 1.0),
-        List('def, List('bar), 2.0)
+      """ } shouldBe limeEquivalentOf(
+        List(
+          List('def, List('foo), 1.0),
+          List('def, List('bar), 2.0)
+        )
       )
+    }
+  }
+
+  def limeEquivalentOf(right: List[Object]) = BeMatcher { left: Object ⇒
+    def convertList(list: lime.List): List[Object] =
+      Stream.iterate((List.empty[Object], list)) {
+        case (acc, list) ⇒
+          val car = list.car() match {
+            case list: lime.List ⇒ convertList(list)
+            case v               ⇒ v
+          }
+          (acc :+ car, list.cdr().asInstanceOf[lime.List])
+      }.dropWhile(!_._2.isInstanceOf[lime.Nil]).head._1
+
+    left match {
+      case left: lime.List ⇒
+        val converted = convertList(left)
+        MatchResult(
+          converted == right,
+          s"$converted was not equal to $right",
+          s"$converted was equal to $right"
+        )
+      case _ ⇒
+        MatchResult(false, s"$left was not a lime.List", s"$left was a lime.List")
     }
   }
 }
