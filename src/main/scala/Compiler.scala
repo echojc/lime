@@ -58,21 +58,28 @@ object Compiler {
       }
   }
 
-  object InlineMath {
-    def unapply(s: Symbol): Option[Int] = s match {
+  object InlineMath { def unapply(s: Symbol): Option[Int] = s match {
       case Symbol("+") ⇒ Some(DADD)
       case Symbol("-") ⇒ Some(DSUB)
       case Symbol("*") ⇒ Some(DMUL)
       case Symbol("/") ⇒ Some(DDIV)
       case Symbol("%") ⇒ Some(DREM)
       case _           ⇒ None
-    }
-  }
+  }}
+  object InlineList { def unapply(s: Symbol): Option[String] = s match {
+      case 'car ⇒ Some("car")
+      case 'cdr ⇒ Some("cdr")
+      case _    ⇒ None
+  }}
   private def inlines(m: MethodVisitor): PartialFunction[Object, Unit] = {
     case InlineMath(fun) %:: (fst: Object) %:: (snd: Object) %:: limeNil() ⇒
       compileAst(m)(fst); unbox(m)
       compileAst(m)(snd); unbox(m)
       m.visitInsn(fun); box(m)
+    case InlineList(fun) %:: (list: Object) %:: limeNil() ⇒
+      compileAst(m)(list)
+      m.visitTypeInsn(CHECKCAST, "lime/List");
+      m.visitMethodInsn(INVOKEVIRTUAL, "lime/List", fun, s"()$O", false);
   }
 
   private def unbox(m: MethodVisitor): Unit = {
