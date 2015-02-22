@@ -30,6 +30,15 @@ object Compiler {
 
   private def statics(m: MethodVisitor): PartialFunction[Object, Unit] = {
     case d: java.lang.Double ⇒
+      quotes(m)(d)
+    case s: String ⇒
+      quotes(m)(s)
+    case 'quote :: (expr: Object) :: Nil ⇒
+      quotes(m)(expr)
+  }
+
+  private def quotes(m: MethodVisitor): PartialFunction[Object, Unit] = {
+    case d: java.lang.Double ⇒
       m.visitLdcInsn(d); box(m)
     case s: String ⇒
       m.visitLdcInsn(s)
