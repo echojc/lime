@@ -8,7 +8,7 @@ class BasicTest extends CompilerTest {
       """ }
       t.foo() shouldBe 3.14159
       t.bar() shouldBe "abc"
-      t.baz() shouldBe 1.0
+      t.baz() shouldBe 1
     }
     it("binds to functions when quoted") {
       val t = compile { """
@@ -18,7 +18,7 @@ class BasicTest extends CompilerTest {
       """ }
       t.qfoo() shouldBe 3.14159
       t.qbar() shouldBe "abc"
-      t.qbaz() shouldBe 1.0
+      t.qbaz() shouldBe 1
     }
   }
 }

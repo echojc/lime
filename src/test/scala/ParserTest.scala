@@ -11,13 +11,13 @@ class ParserTest extends FunSpec with ShouldMatchers {
       parse("1.5") shouldBe 1.5
     }
     it("parses an integer as double") {
-      parse("1") shouldBe 1.0
+      parse("1") shouldBe 1
     }
     it("parses a negative decimal as double") {
       parse("-1.5") shouldBe -1.5
     }
     it("parses a negative integer as double") {
-      parse("-1") shouldBe -1.0
+      parse("-1") shouldBe -1
     }
     it("errors if a number isn't followed by a word boundary") {
       Parser.parse("3a") shouldBe a[Parser.NoSuccess]
@@ -54,10 +54,10 @@ class ParserTest extends FunSpec with ShouldMatchers {
       parse("(foo)") shouldBe limeEquivalentOf(List('foo))
     }
     it("parses a list with more than one expr") {
-      parse("(foo 1 2.5 \"3\")") shouldBe limeEquivalentOf(List('foo, 1.0: D, 2.5: D, "3"))
+      parse("(foo 1 2.5 \"3\")") shouldBe limeEquivalentOf(List('foo, 1: D, 2.5: D, "3"))
     }
     it("parses nested lists") {
-      parse("(foo () (1 2.5 \"3\") bar)") shouldBe limeEquivalentOf(List('foo, Nil, List(1.0, 2.5, "3"), 'bar))
+      parse("(foo () (1 2.5 \"3\") bar)") shouldBe limeEquivalentOf(List('foo, Nil, List(1, 2.5, "3"), 'bar))
     }
   }
 
@@ -99,8 +99,8 @@ class ParserTest extends FunSpec with ShouldMatchers {
         (def (bar) 2)
       """ } shouldBe limeEquivalentOf(
         List(
-          List('def, List('foo), 1.0),
-          List('def, List('bar), 2.0)
+          List('def, List('foo), 1),
+          List('def, List('bar), 2)
         )
       )
     }
