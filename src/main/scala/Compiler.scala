@@ -9,9 +9,7 @@ object Compiler {
   def compile(asts: List[Object], unit: String): Array[Byte] = {
     val c = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     c.visit(V1_7, ACC_PUBLIC + ACC_SUPER, unit, null, "java/lang/Object", null)
-
     asts foreach compileAst(c)
-
     c.visitEnd()
     c.toByteArray()
   }
@@ -29,6 +27,9 @@ object Compiler {
     case d: java.lang.Double ⇒
       m.visitLdcInsn(d)
       m.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
+      m.visitInsn(ARETURN)
+    case s: String ⇒
+      m.visitLdcInsn(s)
       m.visitInsn(ARETURN)
   }
 }

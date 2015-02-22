@@ -3,11 +3,15 @@ import org.scalatest._
 
 class CompilerTest extends FunSpec with ShouldMatchers {
 
-  it("binds values to names") {
+  it("binds single values to functions") {
     val t = compile { """
-      (def (foo) 1)
+      (def (foo) 3.14159)
+      (def (bar) "abc")
+      (def (baz) 1)
     """ }
-    t.foo() shouldBe 1.0
+    t.foo() shouldBe 3.14159
+    t.bar() shouldBe "abc"
+    t.baz() shouldBe 1.0
   }
 
   def compile(code: String): CallableClass = {
@@ -23,5 +27,9 @@ class CallableClass(bytecode: Array[Byte]) extends ClassLoader with Dynamic {
   def applyDynamic(name: String)(args: Object*): Object = {
     val m = underlyingClass.getMethod(name, Seq.fill(args.size)(classOf[Object]): _*)
     m.invoke(null, args: _*)
+  }
+  def selectDynamic(name: String): Object = {
+    val f = underlyingClass.getField(name)
+    f.get(null)
   }
 }
