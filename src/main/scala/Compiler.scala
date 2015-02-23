@@ -1,3 +1,4 @@
+import java.lang.{ Double ⇒ D }
 import org.objectweb.asm._, Ops._
 
 object Compiler {
@@ -23,7 +24,7 @@ object Compiler {
   }
 
   private def genDesc(args: lime.List): String =
-    s"(${Seq.fill(args.len().toInt)(O).mkString})$O"
+    s"(${Seq.fill(args.len().asInstanceOf[D].toInt)(O).mkString})$O"
 
   def compileAst(m: MethodVisitor)(ast: Object): Unit =
     (inlines(m) orElse statics(m))(ast)
@@ -67,9 +68,10 @@ object Compiler {
       case _           ⇒ None
   }}
   object InlineList { def unapply(s: Symbol): Option[String] = s match {
-      case 'car ⇒ Some("car")
-      case 'cdr ⇒ Some("cdr")
-      case _    ⇒ None
+      case 'car    ⇒ Some("car")
+      case 'cdr    ⇒ Some("cdr")
+      case 'length ⇒ Some("len")
+      case _       ⇒ None
   }}
   private def inlines(m: MethodVisitor): PartialFunction[Object, Unit] = {
     case InlineMath(fun) %:: (fst: Object) %:: (snd: Object) %:: limeNil() ⇒
@@ -80,6 +82,12 @@ object Compiler {
       compileAst(m)(list)
       m.visitTypeInsn(CHECKCAST, "lime/List");
       m.visitMethodInsn(INVOKEVIRTUAL, "lime/List", fun, s"()$O", false);
+    case 'cons %:: (fst: Object) %:: (snd: Object) %:: limeNil() ⇒
+      m.visitTypeInsn(NEW, "lime/Cons")
+      m.visitInsn(DUP)
+      compileAst(m)(fst)
+      compileAst(m)(snd)
+      m.visitMethodInsn(INVOKESPECIAL, "lime/Cons", "<init>", s"($O$O)V", false)
   }
 
   private def unbox(m: MethodVisitor): Unit = {

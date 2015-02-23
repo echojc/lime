@@ -1,6 +1,7 @@
 package lime;
-public abstract class List {
+import java.io.Serializable;
+public abstract class List implements Serializable {
   public abstract Object car() throws Exception;
   public abstract Object cdr() throws Exception;
-  public abstract Double len() throws Exception;
+  public abstract Object len() throws Exception;
 }
