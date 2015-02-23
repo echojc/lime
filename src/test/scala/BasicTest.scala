@@ -45,22 +45,22 @@ class BasicTest extends LimeSpec {
     }
     it("non-empty list") {
       val t = compile { """
-        (def (foo) '(1 2.0 "3" 'bar))
+        (def (foo) '(1 2.5 "3" 'bar))
       """ }
-      t.foo() shouldBe limeEquivalentOf(List(1: D, 2.0: D, "3", List('quote, 'bar)))
+      t.foo() shouldBe limeEquivalentOf(List(1: D, 2.5: D, "3", List('quote, 'bar)))
     }
     it("nested lists") {
       val t = compile { """
-        (def (foo) '(() (1 2.0 "3") 'bar))
+        (def (foo) '(() (1 2.5 "3") 'bar))
       """ }
-      t.foo() shouldBe limeEquivalentOf(List(Nil, List(1: D, 2.0: D, "3"), List('quote, 'bar)))
+      t.foo() shouldBe limeEquivalentOf(List(Nil, List(1: D, 2.5: D, "3"), List('quote, 'bar)))
     }
     it("nested quoted lists") {
       val t = compile { """
-        (def (foo) '('() '(1 2.0 "3") 'bar))
+        (def (foo) '('() ''('(1 2.5 "3") 'bar)))
       """ }
       t.foo() shouldBe limeEquivalentOf(List(
-        List('quote, Nil), List('quote, List(1: D, 2.0: D, "3")), List('quote, 'bar)
+        List('quote, Nil), List('quote, List('quote, List(List('quote, List(1: D, 2.5: D, "3")), List('quote, 'bar))))
       ))
     }
   }
